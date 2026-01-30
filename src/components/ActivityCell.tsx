@@ -5,6 +5,7 @@ import { Activity, Category } from '@/lib/types';
 import { formatTimeRange, getActivitySpan } from '@/lib/utils';
 import { XMarkIcon, getCategoryIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
+import { setDraggedItemSpan, getDraggedItemSpan } from './DayColumn';
 
 interface ActivityCellProps {
   activity: Activity;
@@ -15,6 +16,9 @@ interface ActivityCellProps {
   onResize?: (activityId: string, newEndTime: string, newStartTime?: string) => void;
   column?: number;
   totalColumns?: number;
+  isAnyDragActive?: boolean;
+  daySpan?: number;
+  isContinuation?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -33,8 +37,9 @@ function getCategoryStyle(color: string): { bg: string; text: string; border: st
   return CATEGORY_COLORS[color] || { bg: 'bg-violet-100', text: 'text-violet-800', border: 'border-violet-200' };
 }
 
-export default function ActivityCell({ activity, categories, onClick, onDelete, onDragStart, onResize, column = 0, totalColumns = 1 }: ActivityCellProps) {
+export default function ActivityCell({ activity, categories, onClick, onDelete, onDragStart, onResize, column = 0, totalColumns = 1, isAnyDragActive = false, daySpan, isContinuation = false }: ActivityCellProps) {
   const [isResizing, setIsResizing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [resizeHeight, setResizeHeight] = useState<number | null>(null);
   const [resizeTopOffset, setResizeTopOffset] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -42,7 +47,8 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
   const currentTopOffsetRef = useRef<number>(0);
   const wasResizingRef = useRef(false);
 
-  const span = getActivitySpan(activity);
+  // Use daySpan if provided (for multi-day activities), otherwise use full span
+  const span = daySpan ?? getActivitySpan(activity);
   const baseHeightPx = span * 40;
   const heightPx = resizeHeight ?? baseHeightPx;
 
@@ -58,6 +64,8 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
+    e.nativeEvent.stopImmediatePropagation();
     setShowDeleteConfirm(true);
   };
 
@@ -72,9 +80,12 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent click from bubbling to cell
-    // Don't open modal if we just finished resizing
+    // Don't open modal if we just finished resizing or delete confirm is showing
     if (wasResizingRef.current) {
       wasResizingRef.current = false;
+      return;
+    }
+    if (showDeleteConfirm) {
       return;
     }
     onClick();
@@ -228,6 +239,9 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     e.dataTransfer.setDragImage(ghost, rect.width / 2, 20);
     e.dataTransfer.effectAllowed = 'move';
 
+    // Set the dragged item span for highlighting
+    setDraggedItemSpan(span);
+
     // Clean up ghost after a short delay
     setTimeout(() => {
       if (document.body.contains(ghost)) {
@@ -235,7 +249,18 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       }
     }, 0);
 
+    // Mark as dragging after a brief delay so the drag can start first
+    requestAnimationFrame(() => {
+      setIsDragging(true);
+    });
+
     onDragStart(e, activity);
+  };
+
+  const handleDragEnd = () => {
+    // Clear the dragged item span when drag ends
+    setDraggedItemSpan(null);
+    setIsDragging(false);
   };
 
   // Calculate width and position for overlapping activities
@@ -246,11 +271,16 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     <div
       draggable={!isResizing}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={isResizing ? undefined : handleClick}
-      className={`absolute rounded-lg overflow-hidden z-10 group transition-all duration-150 ease-out hover:shadow-md hover:z-20 border ${style.bg} ${style.border} ${
-        isResizing
+      className={`absolute rounded-lg overflow-hidden z-10 group transition-all duration-150 ease-out border ${style.bg} ${style.border} ${
+        isDragging
+          ? 'opacity-30 pointer-events-none'
+          : isAnyDragActive
+          ? 'pointer-events-none'
+          : isResizing
           ? 'cursor-ns-resize z-30 shadow-lg ring-2 ring-purple-400'
-          : 'cursor-grab active:cursor-grabbing active:scale-[0.98] active:opacity-70 hover:scale-[1.01]'
+          : 'cursor-grab active:cursor-grabbing active:scale-[0.98] active:opacity-70 hover:scale-[1.01] hover:shadow-md hover:z-20'
       }`}
       style={{
         height: `${heightPx - 2}px`,
@@ -272,8 +302,11 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
         <div className={`flex items-center gap-1 pr-4 ${style.text}`}>
           <CategoryIcon className="w-3 h-3 flex-shrink-0 opacity-80" />
           <p className="text-xs font-semibold truncate leading-tight">
-            {activity.name}
+            {isContinuation ? '↳ ' : ''}{activity.name}
           </p>
+          {isContinuation && (
+            <span className="text-[9px] opacity-60 flex-shrink-0">(cont&apos;d)</span>
+          )}
         </div>
         {(span > 1 || isResizing) && (
           <p className={`text-[10px] truncate mt-0.5 opacity-75 ${style.text}`}>

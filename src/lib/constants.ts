@@ -36,9 +36,9 @@ export const CITY_SCHEDULE: { start: string; end: string; city: string }[] = [
   { start: '2025-03-08', end: '2025-03-08', city: 'Hong Kong → Toronto' },
 ];
 
-// Time slots from 8:00am to 11:30pm in 30-minute increments
+// Time slots for full 24 hours in 30-minute increments (midnight to 11:30pm)
 export const TIME_SLOTS: TimeSlot[] = [];
-for (let hour = 8; hour <= 23; hour++) {
+for (let hour = 0; hour < 24; hour++) {
   for (let minute = 0; minute < 60; minute += 30) {
     const period = hour >= 12 ? 'pm' : 'am';
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
@@ -46,7 +46,5 @@ for (let hour = 8; hour <= 23; hour++) {
     TIME_SLOTS.push({ hour, minute, label });
   }
 }
-// Remove the last 11:30pm slot to end at 11:30pm (32 slots: 8:00 to 11:30)
-TIME_SLOTS.pop(); // Remove 12:00am if exists
 
 export const CURRENCIES = ['HKD', 'CNY', 'CAD', 'USD'];

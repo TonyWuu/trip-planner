@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { parseISO, addDays, startOfDay, isBefore, isAfter, differenceInMilliseconds, addMinutes } from 'date-fns';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { parseISO, addDays, startOfDay, isBefore, isAfter, differenceInMilliseconds, addMinutes, format } from 'date-fns';
 import { Trip, Activity, Category, ModalMode, FixedItem, WishlistItem } from '@/lib/types';
 import { getWeekDays, getDaysInRange } from '@/lib/utils';
 import { getCategories } from '@/lib/supabase';
@@ -11,7 +11,6 @@ import { useWishlist } from '@/hooks/useWishlist';
 import TimeColumn from './TimeColumn';
 import DayColumn from './DayColumn';
 import FixedItemsBar from './FixedItemsBar';
-import WeekNav from './WeekNav';
 import MobileDayPicker from './MobileDayPicker';
 import ActivityModal from './ActivityModal';
 import FixedItemModal from './FixedItemModal';
@@ -39,6 +38,7 @@ export default function TripGrid({ trip }: TripGridProps) {
   const [fixedItemModalOpen, setFixedItemModalOpen] = useState(false);
   const [selectedFixedItem, setSelectedFixedItem] = useState<FixedItem | null>(null);
   const [wishlistOpen, setWishlistOpen] = useState(true);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   const { activities, createActivity, updateActivity, deleteActivity } = useActivities(trip.id);
   const { flights, hotels, updateFixedItem, deleteFixedItem } = useFixedItems(trip.id);
@@ -63,6 +63,22 @@ export default function TripGrid({ trip }: TripGridProps) {
     }
     fetchCategories();
   }, [trip.id]);
+
+  // Scroll to core hours (8am) on load and when week changes
+  const hasScrolledInitially = useRef(false);
+  useEffect(() => {
+    if (gridContainerRef.current) {
+      // 8am is slot index 16 (8 hours * 2 slots per hour)
+      // Each slot is 40px tall, plus account for the day header (~56px)
+      const coreHourOffset = 16 * 40 + 56;
+      gridContainerRef.current.scrollTo({
+        top: coreHourOffset,
+        // Use instant scroll on first load, smooth on week changes
+        behavior: hasScrolledInitially.current ? 'smooth' : 'instant',
+      });
+      hasScrolledInitially.current = true;
+    }
+  }, [weekStart]);
 
   const allDays = getDaysInRange(trip.start_date, trip.end_date);
   const weekDays = getWeekDays(weekStart, trip.start_date, trip.end_date);
@@ -273,33 +289,40 @@ export default function TripGrid({ trip }: TripGridProps) {
   const displayDays = isMobile ? [allDays[mobileDayIndex]].filter(Boolean) : weekDays;
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-yellow-50">
+      {/* Header with integrated week navigation */}
+      <header className="bg-white/70 backdrop-blur-md px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            {trip.name}
-          </h1>
-          <div className="hidden md:flex items-center gap-2">
-            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-700">HK</span>
-            <span className="text-gray-400">→</span>
-            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">SH</span>
-            <span className="text-gray-400">→</span>
-            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">CD</span>
+          {/* Left: Title */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-800">
+                {trip.name}
+              </h1>
+              <div className="hidden md:flex items-center gap-1 text-[10px]">
+                <span className="text-rose-500 font-medium">HK</span>
+                <span className="text-slate-300">→</span>
+                <span className="text-blue-500 font-medium">Shanghai</span>
+                <span className="text-slate-300">→</span>
+                <span className="text-emerald-500 font-medium">Chengdu</span>
+              </div>
+            </div>
           </div>
+
+          {/* Center: Week date range display */}
+          <div className="hidden md:block px-3 py-1 rounded-lg bg-amber-100/80 text-amber-800 text-xs font-medium">
+            {format(weekStart, 'MMM d')} – {format(addDays(weekStart, 6), 'MMM d, yyyy')}
+          </div>
+
+          {/* Right: Empty for balance */}
+          <div className="w-10 md:w-32" />
         </div>
       </header>
-
-      {/* Week Navigation (Desktop) */}
-      <div className="hidden md:block">
-        <WeekNav
-          weekStart={weekStart}
-          onPrevWeek={handlePrevWeek}
-          onNextWeek={handleNextWeek}
-          canGoPrev={canGoPrev && startOfDay(weekStart).getTime() !== startOfDay(tripStart).getTime()}
-          canGoNext={canGoNext}
-        />
-      </div>
 
       {/* Mobile Day Picker */}
       <MobileDayPicker
@@ -319,28 +342,50 @@ export default function TripGrid({ trip }: TripGridProps) {
         />
       </div>
 
-      {/* Grid Container */}
-      <div className="flex-1 overflow-auto">
-        <div className="flex min-w-fit">
-          <TimeColumn />
-          {displayDays.map((day) => (
-            <DayColumn
-              key={day.dateStr}
-              day={day}
-              activities={activities}
-              categories={categories}
-              onCellClick={handleCellClick}
-              onActivityClick={handleActivityClick}
-              onActivityDelete={handleDelete}
-              onActivityDrop={handleDrop}
-              onActivityResize={handleActivityResize}
+      {/* Main content area with sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Grid Container */}
+        <div ref={gridContainerRef} className="flex-1 overflow-auto px-4 pb-4">
+          <div className="flex min-w-fit">
+            <TimeColumn
+              onPrevWeek={handlePrevWeek}
+              canGoPrev={canGoPrev && startOfDay(weekStart).getTime() !== startOfDay(tripStart).getTime()}
             />
-          ))}
+            {displayDays.map((day) => (
+              <DayColumn
+                key={day.dateStr}
+                day={day}
+                activities={activities}
+                flights={flights}
+                categories={categories}
+                onCellClick={handleCellClick}
+                onActivityClick={handleActivityClick}
+                onActivityDelete={handleDelete}
+                onActivityDrop={handleDrop}
+                onActivityResize={handleActivityResize}
+                onFlightClick={handleFixedItemClick}
+              />
+            ))}
+            {/* Right navigation column */}
+            <div className="flex-shrink-0 w-10">
+              <div className="h-14 flex items-center justify-center mb-2 sticky top-0 z-20 bg-gradient-to-l from-amber-50 to-amber-50/80 backdrop-blur-sm">
+                <button
+                  onClick={handleNextWeek}
+                  disabled={!canGoNext}
+                  className="p-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next week"
+                >
+                  <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Wishlist Sidebar */}
-      <WishlistSidebar
+        {/* Wishlist Sidebar */}
+        <WishlistSidebar
         items={wishlistItems}
         categories={categories}
         onAddItem={createWishlistItem}
@@ -354,6 +399,7 @@ export default function TripGrid({ trip }: TripGridProps) {
         isOpen={wishlistOpen}
         onToggle={() => setWishlistOpen(!wishlistOpen)}
       />
+      </div>
 
       {/* Activity Modal */}
       <ActivityModal

@@ -5,6 +5,7 @@ import { WishlistItem, Category, Activity } from '@/lib/types';
 import { PlusIcon, XMarkIcon, ClockIcon, getCategoryIcon } from './Icons';
 import WishlistModal from './WishlistModal';
 import ConfirmModal from './ConfirmModal';
+import { setDraggedItemSpan } from './DayColumn';
 
 interface WishlistSidebarProps {
   items: WishlistItem[];
@@ -83,7 +84,15 @@ export default function WishlistSidebar({
 
   const handleDragStart = (e: React.DragEvent, item: WishlistItem) => {
     e.dataTransfer.effectAllowed = 'move';
+    // Set the dragged item span for highlighting (duration in 30-min slots)
+    const span = Math.ceil(item.duration_minutes / 30);
+    setDraggedItemSpan(span);
     onDragStart(e, item);
+  };
+
+  const handleDragEnd = () => {
+    // Clear the dragged item span when drag ends
+    setDraggedItemSpan(null);
   };
 
   const formatDuration = (minutes: number) => {
@@ -126,30 +135,31 @@ export default function WishlistSidebar({
 
   return (
     <>
-      {/* Toggle button */}
+      {/* Toggle button when closed */}
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-30 bg-amber-500 hover:bg-amber-600 text-white px-2 py-4 rounded-l-lg shadow-lg transition-all"
+          className="h-full flex-shrink-0 w-10 bg-gradient-to-b from-amber-100 to-amber-50 hover:from-amber-200 hover:to-amber-100 border-l border-amber-200/50 flex flex-col items-center justify-center gap-2 transition-colors"
           title="Open wishlist"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
+          <span className="text-[10px] font-medium text-amber-700 writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>Wishlist</span>
         </button>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar container - uses width transition */}
       <div
-        className={`fixed right-0 top-0 h-full z-30 transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`h-full flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${
+          isOpen ? 'w-80' : 'w-0'
         }`}
       >
         <div
           className={`h-full w-80 border-l shadow-xl flex flex-col transition-colors ${
             isDragOver
               ? 'bg-amber-100 border-amber-400 border-2'
-              : 'bg-white border-gray-200'
+              : 'bg-white/90 backdrop-blur-sm border-amber-200/50'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -210,6 +220,7 @@ export default function WishlistSidebar({
                     key={item.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
+                    onDragEnd={handleDragEnd}
                     onClick={() => handleItemClick(item)}
                     className={`group relative p-3 rounded-lg cursor-grab active:cursor-grabbing active:scale-[0.98] active:opacity-70 transition-all duration-150 ease-out hover:shadow-md hover:scale-[1.01] border ${style.bg} ${style.border}`}
                   >

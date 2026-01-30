@@ -5,7 +5,7 @@ import { Activity, ActivityFormData, Category, ModalMode } from '@/lib/types';
 import { CURRENCIES } from '@/lib/constants';
 import { getMapsUrl } from '@/lib/utils';
 import { createCategory, deleteCategory } from '@/lib/supabase';
-import { XMarkIcon, TrashIcon, MapPinIcon, PlusIcon } from './Icons';
+import { XMarkIcon, TrashIcon, MapPinIcon, PlusIcon, getCategoryIcon, LinkIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
 
 interface ActivityModalProps {
@@ -67,6 +67,7 @@ export default function ActivityModal({
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
+  const [newLinkInput, setNewLinkInput] = useState('');
 
   // Handle ESC key and body scroll lock
   useEffect(() => {
@@ -131,8 +132,45 @@ export default function ActivityModal({
     if (isOpen) {
       setShowNewCategory(false);
       setNewCategoryName('');
+      setNewLinkInput('');
     }
   }, [isOpen]);
+
+  // Helper to get links as array
+  const getLinksArray = (): string[] => {
+    return formData.links ? formData.links.split('\n').filter((l) => l.trim()) : [];
+  };
+
+  // Add a new link
+  const handleAddLink = () => {
+    const trimmedLink = newLinkInput.trim();
+    if (!trimmedLink) return;
+
+    // Add https:// if no protocol specified
+    const linkToAdd = trimmedLink.match(/^https?:\/\//) ? trimmedLink : `https://${trimmedLink}`;
+
+    const currentLinks = getLinksArray();
+    if (!currentLinks.includes(linkToAdd)) {
+      setFormData({ ...formData, links: [...currentLinks, linkToAdd].join('\n') });
+    }
+    setNewLinkInput('');
+  };
+
+  // Remove a link
+  const handleRemoveLink = (linkToRemove: string) => {
+    const currentLinks = getLinksArray();
+    setFormData({ ...formData, links: currentLinks.filter((l) => l !== linkToRemove).join('\n') });
+  };
+
+  // Get display name for a link (domain or shortened URL)
+  const getLinkDisplayName = (url: string): string => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname.replace('www.', '');
+    } catch {
+      return url.length > 30 ? url.substring(0, 30) + '...' : url;
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -267,12 +305,14 @@ export default function ActivityModal({
                 Category *
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {categories.map((cat) => (
+                {categories.map((cat) => {
+                  const CategoryIcon = getCategoryIcon(cat.name);
+                  return (
                   <div key={cat.id} className="relative group">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, category: cat.name })}
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
                         formData.category === cat.name
                           ? 'text-white shadow-lg scale-105'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -283,7 +323,8 @@ export default function ActivityModal({
                           : undefined
                       }
                     >
-                      {cat.name}
+                      <CategoryIcon className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{cat.name}</span>
                     </button>
                     <button
                       type="button"
@@ -294,7 +335,8 @@ export default function ActivityModal({
                       ×
                     </button>
                   </div>
-                ))}
+                );
+                })}
                 <button
                   type="button"
                   onClick={() => setShowNewCategory(!showNewCategory)}
@@ -474,15 +516,65 @@ export default function ActivityModal({
             {/* Links */}
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
-                Links (one per line)
+                Links
               </label>
-              <textarea
-                value={formData.links}
-                onChange={(e) => setFormData({ ...formData, links: e.target.value })}
-                rows={2}
-                className="w-full px-4 py-3 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all resize-none"
-                placeholder="https://example.com"
-              />
+
+              {/* Existing links */}
+              {getLinksArray().length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {getLinksArray().map((link, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-2 bg-purple-50 rounded-lg border border-purple-100 group"
+                    >
+                      <LinkIcon className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-sm text-purple-600 hover:text-purple-800 hover:underline truncate"
+                        title={link}
+                      >
+                        {getLinkDisplayName(link)}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLink(link)}
+                        className="p-1 rounded hover:bg-purple-200 text-purple-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Remove link"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new link */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newLinkInput}
+                  onChange={(e) => setNewLinkInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddLink();
+                    }
+                  }}
+                  className="flex-1 px-4 py-2.5 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all"
+                  placeholder="https://example.com"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddLink}
+                  disabled={!newLinkInput.trim()}
+                  className="px-3 py-2.5 rounded-xl bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Add link"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
 

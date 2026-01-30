@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { XMarkIcon } from './Icons';
 
 interface ConfirmModalProps {
@@ -24,6 +25,12 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -40,7 +47,7 @@ export default function ConfirmModal({
     };
   }, [isOpen, onCancel]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const variantStyles = {
     danger: {
@@ -59,7 +66,7 @@ export default function ConfirmModal({
 
   const styles = variantStyles[variant];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
@@ -124,6 +131,7 @@ export default function ConfirmModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

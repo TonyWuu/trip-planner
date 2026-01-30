@@ -36,26 +36,26 @@ export default function MobileDayPicker({
   const cityStyle = getCityStyle(currentDay.city);
 
   return (
-    <div className="bg-white border-b border-gray-200 md:hidden">
-      <div className="flex items-center justify-between px-4 py-3">
+    <div className="md:hidden px-4 py-3">
+      <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm px-2 py-3">
         <button
           onClick={() => canGoPrev && onDayChange(currentDayIndex - 1)}
           disabled={!canGoPrev}
-          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-2.5 rounded-xl hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           aria-label="Previous day"
         >
-          <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
+          <ChevronLeftIcon className="w-5 h-5 text-slate-600" />
         </button>
 
         <div className="text-center">
-          <div className="text-xl font-bold text-gray-900">
+          <div className="text-xl font-bold text-slate-800">
             {formatDateHeader(currentDay.date)}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-slate-400">
             {currentDay.dayOfWeek}
           </div>
           {currentDay.city && (
-            <span className={`inline-block mt-1 px-3 py-0.5 text-xs font-semibold rounded-full ${cityStyle.bg} ${cityStyle.text}`}>
+            <span className={`inline-block mt-1.5 px-3 py-1 text-xs font-semibold rounded-xl shadow-sm ${cityStyle.bg} ${cityStyle.text}`}>
               {currentDay.city}
             </span>
           )}
@@ -64,10 +64,10 @@ export default function MobileDayPicker({
         <button
           onClick={() => canGoNext && onDayChange(currentDayIndex + 1)}
           disabled={!canGoNext}
-          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-2.5 rounded-xl hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           aria-label="Next day"
         >
-          <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+          <ChevronRightIcon className="w-5 h-5 text-slate-600" />
         </button>
       </div>
     </div>

@@ -186,6 +186,12 @@ export function DefaultCategoryIcon({ className }: IconProps) {
 export function getCategoryIcon(categoryName: string): React.FC<IconProps> {
   const name = categoryName.toLowerCase();
 
+  if (name.includes('flight') || name.includes('plane') || name.includes('airport')) {
+    return PlaneIcon;
+  }
+  if (name.includes('hotel') || name.includes('accommodation') || name.includes('stay') || name.includes('lodging')) {
+    return BuildingIcon;
+  }
   if (name.includes('restaurant') || name.includes('food') || name.includes('dining') || name.includes('eat')) {
     return UtensilsIcon;
   }
