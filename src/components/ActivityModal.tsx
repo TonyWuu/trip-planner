@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, ActivityFormData, Category, ModalMode } from '@/lib/types';
-import { CURRENCIES } from '@/lib/constants';
+import { CURRENCIES, TRIP_YEAR } from '@/lib/constants';
 import { getMapsUrl } from '@/lib/utils';
 import { createCategory, deleteCategory } from '@/lib/supabase';
 import { XMarkIcon, TrashIcon, PlusIcon, getCategoryIcon, LinkIcon } from './Icons';
@@ -272,7 +272,7 @@ export default function ActivityModal({
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl animate-slideUp"
+        className="relative w-full max-w-md max-h-[85vh] overflow-hidden rounded-xl shadow-2xl animate-slideUp"
         style={{
           background: '#ffffff',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
@@ -280,64 +280,44 @@ export default function ActivityModal({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between p-5"
+          className="flex items-center justify-between px-3 py-2"
           style={{
             background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 143, 171, 0.08))',
             borderBottom: '1px solid rgba(255, 107, 107, 0.15)',
           }}
         >
-          <h2
-            className="text-xl font-bold"
-            style={{
-              fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
-              color: '#ff6b6b',
-            }}
-          >
+          <h2 className="text-sm font-bold" style={{ color: '#ff6b6b' }}>
             {mode === 'create' ? 'New Activity' : 'Edit Activity'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-[#ff6b6b]/10 transition-colors"
+            className="p-1 rounded hover:bg-[#ff6b6b]/10 transition-colors"
             style={{ color: '#ff6b6b' }}
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(90vh-180px)]">
-          <div className="p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(85vh-90px)]">
+          <div className="p-3 space-y-2">
             {/* Name */}
             <div>
-              <label
-                className="block text-sm font-semibold text-gray-600 mb-2"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-              >
-                Activity Name *
-              </label>
+              <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Name *</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3.5 rounded-xl text-gray-700 placeholder:text-gray-400 transition-all duration-200 font-medium"
-                style={{
-                  background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                  border: '2px solid rgba(255, 107, 107, 0.2)',
-                }}
+                className="w-full px-2 py-1.5 rounded-md text-xs text-gray-700 placeholder:text-gray-400 font-medium bg-gray-50 border border-gray-200"
                 placeholder="e.g., Dim Sum at Tim Ho Wan"
               />
             </div>
 
             {/* Category */}
             <div>
-              <label
-                className="block text-sm font-semibold text-gray-600 mb-2"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-              >
-                Category *
-              </label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Category *</label>
+              <div className="flex flex-wrap gap-1">
                 {categories.map((cat) => {
                   const CategoryIcon = getCategoryIcon(cat.name);
                   const isSelected = formData.category === cat.name;
@@ -346,27 +326,21 @@ export default function ActivityModal({
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, category: cat.name })}
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
-                        isSelected
-                          ? 'text-white shadow-md'
-                          : 'text-gray-600 hover:opacity-80'
+                      className={`px-2 py-1 rounded-md text-[10px] font-semibold transition-all flex items-center gap-1 ${
+                        isSelected ? 'text-white' : 'text-gray-600 hover:opacity-80'
                       }`}
                       style={{
-                        background: isSelected
-                          ? `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)`
-                          : `linear-gradient(145deg, ${cat.color}15, ${cat.color}25)`,
-                        border: `2px solid ${isSelected ? 'transparent' : cat.color + '40'}`,
-                        boxShadow: isSelected ? `0 4px 12px ${cat.color}40` : 'none',
-                        fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+                        background: isSelected ? cat.color : `${cat.color}20`,
+                        border: `1px solid ${isSelected ? 'transparent' : cat.color + '40'}`,
                       }}
                     >
-                      <CategoryIcon className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{cat.name}</span>
+                      <CategoryIcon className="w-2.5 h-2.5 flex-shrink-0" />
+                      <span>{cat.name}</span>
                     </button>
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCategory(e, cat)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#ff6b6b] text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-xs font-bold hover:scale-110 shadow-md"
+                      className="absolute -top-1 -right-1 w-3 h-3 bg-[#ff6b6b] text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-[8px] font-bold"
                       title={`Delete ${cat.name}`}
                     >
                       ×
@@ -377,106 +351,113 @@ export default function ActivityModal({
                 <button
                   type="button"
                   onClick={() => setShowNewCategory(!showNewCategory)}
-                  className={`px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border-2 border-dashed ${
+                  className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border-2 border-dashed ${
                     showNewCategory
-                      ? 'border-[#ff6b6b] bg-[#ff6b6b]/10 text-[#ff6b6b] rotate-0'
+                      ? 'border-[#ff6b6b] bg-[#ff6b6b]/10 text-[#ff6b6b]'
                       : 'border-gray-300 text-gray-400 hover:border-[#ff6b6b] hover:text-[#ff6b6b] hover:bg-[#ff6b6b]/5'
                   }`}
                 >
-                  <PlusIcon className="w-4 h-4 mx-auto" />
+                  <PlusIcon className="w-3 h-3 mx-auto" />
                 </button>
               </div>
 
               {/* New Category Form */}
               {showNewCategory && (
-                <div
-                  className="mt-3 p-4 rounded-xl"
-                  style={{
-                    background: 'rgba(255, 107, 107, 0.05)',
-                    border: '1px solid rgba(255, 107, 107, 0.2)',
-                  }}
-                >
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Category name"
-                    className="w-full px-3 py-2.5 rounded-xl bg-white text-gray-700 placeholder:text-gray-400 text-sm font-medium"
-                    style={{ border: '2px solid rgba(255, 107, 107, 0.2)' }}
-                  />
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-xs text-gray-500 font-medium">Color:</span>
-                    <div className="flex gap-1.5">
-                      {CATEGORY_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setNewCategoryColor(color)}
-                          className={`w-7 h-7 rounded-full transition-all duration-200 ${
-                            newCategoryColor === color ? 'scale-125 shadow-lg' : 'hover:scale-110'
-                          }`}
-                          style={{
-                            background: `linear-gradient(135deg, ${color}, ${color}cc)`,
-                            boxShadow: newCategoryColor === color ? `0 4px 12px ${color}50` : 'none',
-                          }}
-                        />
-                      ))}
-                    </div>
+                <div className="mt-1.5 p-2 rounded-md bg-gray-50 border border-gray-200">
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="Name"
+                      className="flex-1 px-2 py-1 rounded text-xs bg-white border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateCategory}
+                      disabled={!newCategoryName.trim()}
+                      className="px-2 py-1 text-white text-[10px] font-semibold rounded disabled:opacity-50"
+                      style={{ background: '#ff6b6b' }}
+                    >
+                      Add
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCreateCategory}
-                    disabled={!newCategoryName.trim()}
-                    className="mt-3 w-full px-3 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
-                    style={{
-                      background: '#ff6b6b',
-                      fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
-                    }}
-                  >
-                    Add Category
-                  </button>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    {CATEGORY_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setNewCategoryColor(color)}
+                        className={`w-4 h-4 rounded-full ${newCategoryColor === color ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`}
+                        style={{ background: color }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Date & Time */}
-            <div className="space-y-3">
-              <div>
-                <label
-                  className="block text-sm font-semibold text-gray-600 mb-2"
-                  style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-                >
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.start_datetime.split('T')[0] || ''}
-                  onChange={(e) => {
-                    const date = e.target.value;
-                    const startTime = formData.start_datetime.split('T')[1] || '09:00';
-                    const endTime = formData.end_datetime.split('T')[1] || '10:00';
-                    setFormData({
-                      ...formData,
-                      start_datetime: `${date}T${startTime}`,
-                      end_datetime: `${date}T${endTime}`,
-                    });
-                  }}
-                  className="w-full px-4 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200"
-                  style={{
-                    background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                    border: '2px solid rgba(255, 107, 107, 0.2)',
-                  }}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label
-                    className="block text-sm font-semibold text-gray-600 mb-2"
-                    style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+            {/* Date & Time - single row */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Date *</label>
+                <div className="flex gap-1">
+                  <select
+                    required
+                    value={formData.start_datetime.split('T')[0]?.split('-')[1] || ''}
+                    onChange={(e) => {
+                      const currentDate = formData.start_datetime.split('T')[0] || `${TRIP_YEAR}-01-01`;
+                      const [, , day] = currentDate.split('-');
+                      const newDate = `${TRIP_YEAR}-${e.target.value}-${day}`;
+                      const startTime = formData.start_datetime.split('T')[1] || '09:00';
+                      const endTime = formData.end_datetime.split('T')[1] || '10:00';
+                      setFormData({
+                        ...formData,
+                        start_datetime: `${newDate}T${startTime}`,
+                        end_datetime: `${newDate}T${endTime}`,
+                      });
+                    }}
+                    className="w-14 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
                   >
-                    Start *
-                  </label>
+                    <option value="01">Jan</option>
+                    <option value="02">Feb</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Apr</option>
+                    <option value="05">May</option>
+                    <option value="06">Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Aug</option>
+                    <option value="09">Sep</option>
+                    <option value="10">Oct</option>
+                    <option value="11">Nov</option>
+                    <option value="12">Dec</option>
+                  </select>
+                  <select
+                    required
+                    value={formData.start_datetime.split('T')[0]?.split('-')[2] || ''}
+                    onChange={(e) => {
+                      const currentDate = formData.start_datetime.split('T')[0] || `${TRIP_YEAR}-01-01`;
+                      const [, month] = currentDate.split('-');
+                      const newDate = `${TRIP_YEAR}-${month}-${e.target.value}`;
+                      const startTime = formData.start_datetime.split('T')[1] || '09:00';
+                      const endTime = formData.end_datetime.split('T')[1] || '10:00';
+                      setFormData({
+                        ...formData,
+                        start_datetime: `${newDate}T${startTime}`,
+                        end_datetime: `${newDate}T${endTime}`,
+                      });
+                    }}
+                    className="w-12 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
+                  >
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                      <option key={day} value={String(day).padStart(2, '0')}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Time *</label>
+                <div className="flex items-center gap-1">
                   <input
                     type="time"
                     required
@@ -485,20 +466,9 @@ export default function ActivityModal({
                       const date = formData.start_datetime.split('T')[0] || '';
                       setFormData({ ...formData, start_datetime: `${date}T${e.target.value}` });
                     }}
-                    className="w-full px-4 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200"
-                    style={{
-                      background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                      border: '2px solid rgba(255, 107, 107, 0.2)',
-                    }}
+                    className="w-20 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
                   />
-                </div>
-                <div>
-                  <label
-                    className="block text-sm font-semibold text-gray-600 mb-2"
-                    style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-                  >
-                    End *
-                  </label>
+                  <span className="text-gray-400 text-xs">→</span>
                   <input
                     type="time"
                     required
@@ -507,11 +477,7 @@ export default function ActivityModal({
                       const date = formData.end_datetime.split('T')[0] || '';
                       setFormData({ ...formData, end_datetime: `${date}T${e.target.value}` });
                     }}
-                    className="w-full px-4 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200"
-                    style={{
-                      background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                      border: '2px solid rgba(255, 107, 107, 0.2)',
-                    }}
+                    className="w-20 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
                   />
                 </div>
               </div>
@@ -519,16 +485,11 @@ export default function ActivityModal({
 
             {/* Address */}
             <div>
-              <label
-                className="block text-sm font-semibold text-gray-600 mb-2"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-              >
-                Address
-              </label>
+              <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Address</label>
               <AddressAutocomplete
                 value={formData.address}
                 onChange={(address) => setFormData({ ...formData, address })}
-                placeholder="Search for a place or address..."
+                placeholder="Search for a place..."
                 onMapsClick={() => {
                   if (formData.address) {
                     window.open(getMapsUrl(formData.address), '_blank', 'noopener,noreferrer');
@@ -538,150 +499,110 @@ export default function ActivityModal({
               />
             </div>
 
-            {/* Notes */}
-            <div>
-              <label
-                className="block text-sm font-semibold text-gray-600 mb-2"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-              >
-                Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl text-gray-700 placeholder:text-gray-400 transition-all resize-none font-medium"
-                style={{
-                  background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                  border: '2px solid rgba(255, 107, 107, 0.2)',
-                }}
-                placeholder="Additional notes..."
-              />
-            </div>
-
-            {/* Cost */}
-            <div>
-              <label
-                className="block text-sm font-semibold text-gray-600 mb-2"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-              >
-                Cost
-              </label>
-              <div className="flex gap-3">
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.cost_amount}
-                  onChange={(e) => setFormData({ ...formData, cost_amount: e.target.value })}
-                  className="flex-1 px-4 py-3 rounded-xl text-gray-700 placeholder:text-gray-400 transition-all font-medium"
-                  style={{
-                    background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                    border: '2px solid rgba(255, 107, 107, 0.2)',
-                  }}
-                  placeholder="0.00"
-                />
-                <select
-                  value={formData.cost_currency}
-                  onChange={(e) => setFormData({ ...formData, cost_currency: e.target.value })}
-                  className="w-24 px-3 py-3 rounded-xl text-gray-700 transition-all font-medium"
-                  style={{
-                    background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-                    border: '2px solid rgba(255, 107, 107, 0.2)',
-                  }}
-                >
-                  {CURRENCIES.map((currency) => (
-                    <option key={currency} value={currency}>
-                      {currency}
-                    </option>
-                  ))}
-                </select>
+            {/* Optional Details Section */}
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                <span className="font-medium">Optional</span>
+                <div className="flex-1 h-px bg-gray-100" />
               </div>
-            </div>
 
-            {/* Links */}
-            <div>
-              <label
-                className="block text-sm font-semibold text-gray-600 mb-2"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
-              >
-                Links
-              </label>
-
-              {/* Existing links */}
-              {getLinksArray().length > 0 && (
-                <div className="space-y-2 mb-3">
-                  {getLinksArray().map((link, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl group"
-                      style={{
-                        background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.08), rgba(255, 217, 61, 0.08))',
-                        border: '2px solid rgba(255, 107, 107, 0.15)',
-                      }}
-                    >
-                      <LinkIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#ff6b6b' }} />
-                      <a
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-sm font-medium hover:underline truncate"
-                        style={{ color: '#ff6b6b' }}
-                        title={link}
-                      >
-                        {getLinkDisplayName(link)}
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLink(link)}
-                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-[#ff6b6b]/20"
-                        style={{ color: '#ff6b6b' }}
-                        title="Remove link"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+              {/* Cost - inline with currency */}
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs font-medium text-gray-500 w-12">Cost</label>
+                <div className="flex items-center gap-1 flex-1">
+                  <select
+                    value={formData.cost_currency}
+                    onChange={(e) => setFormData({ ...formData, cost_currency: e.target.value })}
+                    className="px-2 py-1.5 rounded-md text-xs text-gray-600 font-medium bg-gray-50 border border-gray-200"
+                  >
+                    {CURRENCIES.map((currency) => (
+                      <option key={currency} value={currency}>{currency}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.cost_amount}
+                    onChange={(e) => setFormData({ ...formData, cost_amount: e.target.value })}
+                    className="w-24 px-2 py-1.5 rounded-md text-xs text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200"
+                    placeholder="0.00"
+                  />
                 </div>
-              )}
+              </div>
 
-              {/* Add new link */}
-              <div className="flex gap-2">
+              {/* Notes - single line input */}
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs font-medium text-gray-500 w-12">Notes</label>
                 <input
                   type="text"
-                  value={newLinkInput}
-                  onChange={(e) => setNewLinkInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddLink();
-                    }
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl text-gray-700 placeholder:text-gray-400 transition-colors font-medium"
-                  style={{
-                    background: 'rgba(255, 107, 107, 0.05)',
-                    border: '2px solid rgba(255, 107, 107, 0.2)',
-                  }}
-                  placeholder="https://example.com"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="flex-1 px-2 py-1.5 rounded-md text-xs text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200"
+                  placeholder="Add notes..."
                 />
-                <button
-                  type="button"
-                  onClick={handleAddLink}
-                  disabled={!newLinkInput.trim()}
-                  className="px-4 py-3 rounded-xl text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-                  style={{
-                    background: '#ff6b6b',
-                  }}
-                  title="Add link"
-                >
-                  <PlusIcon className="w-5 h-5" />
-                </button>
+              </div>
+
+              {/* Links - inline with tags */}
+              <div className="flex items-start gap-2">
+                <label className="text-xs font-medium text-gray-500 w-12 pt-1.5">Links</label>
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-1">
+                    {getLinksArray().map((link, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100"
+                      >
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline max-w-[120px] truncate"
+                          title={link}
+                        >
+                          {getLinkDisplayName(link)}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLink(link)}
+                          className="text-blue-400 hover:text-blue-600"
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={newLinkInput}
+                        onChange={(e) => setNewLinkInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddLink();
+                          }
+                        }}
+                        className="w-32 px-2 py-1 rounded-md text-xs text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200"
+                        placeholder="Add URL..."
+                      />
+                      {newLinkInput.trim() && (
+                        <button
+                          type="button"
+                          onClick={handleAddLink}
+                          className="p-1 rounded-md text-blue-500 hover:bg-blue-50"
+                        >
+                          <PlusIcon className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Actions */}
           <div
-            className="sticky bottom-0 flex items-center justify-between p-5 bg-white"
+            className="sticky bottom-0 flex items-center justify-between px-4 py-2.5 bg-white"
             style={{
               borderTop: '1px solid rgba(255, 107, 107, 0.15)',
             }}
@@ -691,32 +612,27 @@ export default function ActivityModal({
                 type="button"
                 onClick={handleDeleteClick}
                 disabled={deleting}
-                className="flex items-center gap-2 px-4 py-2.5 text-[#ff6b6b] hover:bg-[#ff6b6b]/10 rounded-xl transition-colors disabled:opacity-50 font-semibold"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[#ff6b6b] hover:bg-[#ff6b6b]/10 rounded-lg transition-colors disabled:opacity-50 text-sm font-semibold"
               >
-                <TrashIcon className="w-4 h-4" />
+                <TrashIcon className="w-3.5 h-3.5" />
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>
             ) : (
               <div />
             )}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold transition-colors"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                className="px-4 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2.5 rounded-xl font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
-                style={{
-                  background: '#ff6b6b',
-                  fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
-                }}
+                className="px-5 py-1.5 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                style={{ background: '#ff6b6b' }}
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>

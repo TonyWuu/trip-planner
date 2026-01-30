@@ -371,10 +371,9 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       {onResize && (
         <div
           onMouseDown={handleTopResizeStart}
-          className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-t-lg"
-          style={{ background: `linear-gradient(to bottom, ${bgColor}40, transparent)` }}
+          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
         >
-          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: bgColor }} />
+          <div className="w-6 h-0.5 rounded-full" style={{ backgroundColor: bgColor }} />
         </div>
       )}
 
@@ -382,10 +381,9 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       {onResize && (
         <div
           onMouseDown={handleBottomResizeStart}
-          className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-b-lg"
-          style={{ background: `linear-gradient(to top, ${bgColor}40, transparent)` }}
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
         >
-          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: bgColor }} />
+          <div className="w-6 h-0.5 rounded-full" style={{ backgroundColor: bgColor }} />
         </div>
       )}
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { MapPinIcon } from './Icons';
 import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
@@ -35,15 +36,25 @@ export default function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const [isLoading, setIsLoading] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  const justSelectedRef = useRef(false);
 
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
+
+  // Debug logging
+  useEffect(() => {
+    if (loadError) {
+      console.error('Google Maps failed to load:', loadError);
+    }
+  }, [loadError]);
 
   // Sync external value changes
   useEffect(() => {
@@ -53,15 +64,34 @@ export default function AddressAutocomplete({
   // Initialize autocomplete service when Google Maps is loaded
   useEffect(() => {
     if (isLoaded && !autocompleteServiceRef.current) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-      sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+      try {
+        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+      } catch (err) {
+        console.error('Failed to initialize Places AutocompleteService:', err);
+      }
     }
   }, [isLoaded]);
+
+  // Update dropdown position when opening
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, []);
 
   // Handle clicks outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const isOutsideContainer = containerRef.current && !containerRef.current.contains(target);
+      const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
+      if (isOutsideContainer && isOutsideDropdown) {
         setIsOpen(false);
       }
     };
@@ -70,12 +100,30 @@ export default function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Update position when dropdown opens or window scrolls/resizes
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+      window.addEventListener('scroll', updateDropdownPosition, true);
+      window.addEventListener('resize', updateDropdownPosition);
+      return () => {
+        window.removeEventListener('scroll', updateDropdownPosition, true);
+        window.removeEventListener('resize', updateDropdownPosition);
+      };
+    }
+  }, [isOpen, updateDropdownPosition]);
+
   // Debounced search for predictions
   const searchPredictions = useCallback(
     (input: string) => {
-      if (!autocompleteServiceRef.current || !input.trim()) {
+      if (!input.trim()) {
         setPredictions([]);
         setIsOpen(false);
+        return;
+      }
+
+      if (!autocompleteServiceRef.current) {
+        console.warn('AutocompleteService not initialized. isLoaded:', isLoaded);
         return;
       }
 
@@ -85,11 +133,6 @@ export default function AddressAutocomplete({
         {
           input,
           sessionToken: sessionTokenRef.current!,
-          // Bias towards East Asia (Hong Kong, China region)
-          locationBias: {
-            center: { lat: 25.0, lng: 115.0 },
-            radius: 2000000, // 2000km radius
-          },
         },
         (results, status) => {
           setIsLoading(false);
@@ -97,25 +140,36 @@ export default function AddressAutocomplete({
             setPredictions(results as Prediction[]);
             setIsOpen(true);
           } else {
+            console.warn('Places API returned status:', status);
             setPredictions([]);
             setIsOpen(false);
           }
         }
       );
     },
-    []
+    [isLoaded]
   );
 
-  // Debounce input changes
+  // Debounce input changes - search as user types
   useEffect(() => {
+    if (!inputValue.trim()) {
+      setPredictions([]);
+      setIsOpen(false);
+      return;
+    }
+
+    // Don't search if we just selected an item
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
-      if (inputValue && inputValue !== value) {
-        searchPredictions(inputValue);
-      }
+      searchPredictions(inputValue);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [inputValue, value, searchPredictions]);
+  }, [inputValue, searchPredictions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -124,6 +178,7 @@ export default function AddressAutocomplete({
   };
 
   const handleSelectPrediction = (prediction: Prediction) => {
+    justSelectedRef.current = true;
     setInputValue(prediction.description);
     onChange(prediction.description);
     setPredictions([]);
@@ -147,9 +202,17 @@ export default function AddressAutocomplete({
           type="text"
           value={inputValue}
           onChange={handleInputChange}
-          onFocus={() => predictions.length > 0 && setIsOpen(true)}
+          onFocus={() => {
+            if (inputValue.trim()) {
+              searchPredictions(inputValue);
+            }
+          }}
           onKeyDown={handleKeyDown}
-          className={`w-full px-4 py-3 pr-12 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all ${className}`}
+          className={`w-full px-3 py-2 pr-10 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 transition-all font-medium ${className}`}
+          style={{
+            background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+            border: '1.5px solid rgba(255, 107, 107, 0.2)',
+          }}
           placeholder={placeholder}
           autoComplete="off"
         />
@@ -157,14 +220,14 @@ export default function AddressAutocomplete({
           <button
             type="button"
             onClick={onMapsClick}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-purple-500 hover:text-purple-600 hover:bg-purple-100 transition-colors"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-[#ff6b6b] hover:bg-[#ff6b6b]/10 transition-colors"
           >
-            <MapPinIcon className="w-5 h-5" />
+            <MapPinIcon className="w-4 h-4" />
           </button>
         )}
         {isLoading && (
-          <div className="absolute right-12 top-1/2 -translate-y-1/2">
-            <svg className="animate-spin h-4 w-4 text-purple-400" viewBox="0 0 24 24">
+          <div className="absolute right-10 top-1/2 -translate-y-1/2">
+            <svg className="animate-spin h-3.5 w-3.5 text-[#ff6b6b]" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
@@ -172,38 +235,48 @@ export default function AddressAutocomplete({
         )}
       </div>
 
-      {/* Predictions Dropdown */}
-      {isOpen && predictions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden max-h-64 overflow-y-auto">
+      {/* Predictions Dropdown - rendered in portal to avoid overflow clipping */}
+      {isOpen && predictions.length > 0 && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed bg-white rounded-lg shadow-lg border border-[#ff6b6b]/20 overflow-hidden max-h-48 overflow-y-auto"
+          style={{
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+            zIndex: 9999,
+          }}
+        >
           {predictions.map((prediction) => (
             <button
               key={prediction.place_id}
               type="button"
               onClick={() => handleSelectPrediction(prediction)}
-              className="w-full px-4 py-3 text-left hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-b-0"
+              className="w-full px-3 py-2 text-left hover:bg-[#ff6b6b]/5 transition-colors border-b border-gray-100 last:border-b-0"
             >
-              <div className="flex items-start gap-3">
-                <MapPinIcon className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2">
+                <MapPinIcon className="w-4 h-4 text-[#ff6b6b] flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-800 truncate">
+                  <div className="font-medium text-sm text-gray-800 truncate">
                     {prediction.structured_formatting.main_text}
                   </div>
-                  <div className="text-sm text-gray-500 truncate">
+                  <div className="text-xs text-gray-500 truncate">
                     {prediction.structured_formatting.secondary_text}
                   </div>
                 </div>
               </div>
             </button>
           ))}
-          <div className="px-4 py-2 bg-gray-50 text-xs text-gray-400 flex items-center justify-end gap-1">
+          <div className="px-3 py-1.5 bg-gray-50 text-[10px] text-gray-400 flex items-center justify-end gap-1">
             <span>Powered by</span>
             <img
               src="https://developers.google.com/static/maps/documentation/images/google_on_white.png"
               alt="Google"
-              className="h-3"
+              className="h-2.5"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
