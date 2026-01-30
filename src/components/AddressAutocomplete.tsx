@@ -203,16 +203,10 @@ export default function AddressAutocomplete({
           value={inputValue}
           onChange={handleInputChange}
           onFocus={() => {
-            if (inputValue.trim()) {
-              searchPredictions(inputValue);
-            }
+            // Don't auto-open dropdown on focus - only search when user types
           }}
           onKeyDown={handleKeyDown}
-          className={`w-full px-3 py-2 pr-10 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 transition-all font-medium ${className}`}
-          style={{
-            background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
-            border: '1.5px solid rgba(255, 107, 107, 0.2)',
-          }}
+          className={`w-full px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors ${className}`}
           placeholder={placeholder}
           autoComplete="off"
         />
@@ -220,14 +214,14 @@ export default function AddressAutocomplete({
           <button
             type="button"
             onClick={onMapsClick}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-[#ff6b6b] hover:bg-[#ff6b6b]/10 transition-colors"
+            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-[#ff6b6b] hover:bg-[#ff6b6b]/10 transition-colors"
           >
-            <MapPinIcon className="w-4 h-4" />
+            <MapPinIcon className="w-3.5 h-3.5" />
           </button>
         )}
         {isLoading && (
-          <div className="absolute right-10 top-1/2 -translate-y-1/2">
-            <svg className="animate-spin h-3.5 w-3.5 text-[#ff6b6b]" viewBox="0 0 24 24">
+          <div className="absolute right-7 top-1/2 -translate-y-1/2">
+            <svg className="animate-spin h-3 w-3 text-[#ff6b6b]" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>

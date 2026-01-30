@@ -300,24 +300,24 @@ export default function ActivityModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(85vh-90px)]">
-          <div className="p-3 space-y-2">
+          <div className="p-4 space-y-3">
             {/* Name */}
             <div>
-              <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Name *</label>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Name *</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-2 py-1.5 rounded-md text-xs text-gray-700 placeholder:text-gray-400 font-medium bg-gray-50 border border-gray-200"
+                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
                 placeholder="e.g., Dim Sum at Tim Ho Wan"
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Category *</label>
-              <div className="flex flex-wrap gap-1">
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Category *</label>
+              <div className="flex flex-wrap gap-1.5">
                 {categories.map((cat) => {
                   const CategoryIcon = getCategoryIcon(cat.name);
                   const isSelected = formData.category === cat.name;
@@ -326,21 +326,21 @@ export default function ActivityModal({
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, category: cat.name })}
-                      className={`px-2 py-1 rounded-md text-[10px] font-semibold transition-all flex items-center gap-1 ${
-                        isSelected ? 'text-white' : 'text-gray-600 hover:opacity-80'
+                      className={`h-8 px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                        isSelected ? 'text-white shadow-sm' : 'text-gray-600 hover:opacity-80'
                       }`}
                       style={{
-                        background: isSelected ? cat.color : `${cat.color}20`,
-                        border: `1px solid ${isSelected ? 'transparent' : cat.color + '40'}`,
+                        background: isSelected ? cat.color : `${cat.color}15`,
+                        border: `1.5px solid ${isSelected ? 'transparent' : cat.color + '30'}`,
                       }}
                     >
-                      <CategoryIcon className="w-2.5 h-2.5 flex-shrink-0" />
+                      <CategoryIcon className="w-3 h-3 flex-shrink-0" />
                       <span>{cat.name}</span>
                     </button>
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCategory(e, cat)}
-                      className="absolute -top-1 -right-1 w-3 h-3 bg-[#ff6b6b] text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-[8px] font-bold"
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-[#ff6b6b] text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-[10px] font-bold shadow-sm"
                       title={`Delete ${cat.name}`}
                     >
                       ×
@@ -351,44 +351,44 @@ export default function ActivityModal({
                 <button
                   type="button"
                   onClick={() => setShowNewCategory(!showNewCategory)}
-                  className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border-2 border-dashed ${
+                  className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border-2 border-dashed ${
                     showNewCategory
                       ? 'border-[#ff6b6b] bg-[#ff6b6b]/10 text-[#ff6b6b]'
                       : 'border-gray-300 text-gray-400 hover:border-[#ff6b6b] hover:text-[#ff6b6b] hover:bg-[#ff6b6b]/5'
                   }`}
                 >
-                  <PlusIcon className="w-3 h-3 mx-auto" />
+                  <PlusIcon className="w-3.5 h-3.5 mx-auto" />
                 </button>
               </div>
 
               {/* New Category Form */}
               {showNewCategory && (
-                <div className="mt-1.5 p-2 rounded-md bg-gray-50 border border-gray-200">
-                  <div className="flex gap-1.5">
+                <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200">
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="Name"
-                      className="flex-1 px-2 py-1 rounded text-xs bg-white border border-gray-200"
+                      placeholder="Category name"
+                      className="flex-1 h-8 px-3 rounded-lg text-sm bg-white border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
                     />
                     <button
                       type="button"
                       onClick={handleCreateCategory}
                       disabled={!newCategoryName.trim()}
-                      className="px-2 py-1 text-white text-[10px] font-semibold rounded disabled:opacity-50"
+                      className="h-8 px-4 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
                       style={{ background: '#ff6b6b' }}
                     >
                       Add
                     </button>
                   </div>
-                  <div className="flex items-center gap-1 mt-1.5">
+                  <div className="flex items-center gap-1.5 mt-2">
                     {CATEGORY_COLORS.map((color) => (
                       <button
                         key={color}
                         type="button"
                         onClick={() => setNewCategoryColor(color)}
-                        className={`w-4 h-4 rounded-full ${newCategoryColor === color ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`}
+                        className={`w-5 h-5 rounded-full transition-transform ${newCategoryColor === color ? 'ring-2 ring-offset-1 ring-gray-400 scale-110' : 'hover:scale-110'}`}
                         style={{ background: color }}
                       />
                     ))}
@@ -397,11 +397,11 @@ export default function ActivityModal({
               )}
             </div>
 
-            {/* Date & Time - single row */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Date *</label>
-                <div className="flex gap-1">
+            {/* When - Date & Time combined */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">When *</label>
+              <div className="flex items-center gap-2">
+                <div className="flex">
                   <select
                     required
                     value={formData.start_datetime.split('T')[0]?.split('-')[1] || ''}
@@ -417,7 +417,7 @@ export default function ActivityModal({
                         end_datetime: `${newDate}T${endTime}`,
                       });
                     }}
-                    className="w-14 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
+                    className="h-9 px-3 rounded-l-lg text-sm text-gray-700 bg-gray-50 border border-r-0 border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
                   >
                     <option value="01">Jan</option>
                     <option value="02">Feb</option>
@@ -447,17 +447,14 @@ export default function ActivityModal({
                         end_datetime: `${newDate}T${endTime}`,
                       });
                     }}
-                    className="w-12 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
+                    className="h-9 w-16 px-2 rounded-r-lg text-sm text-gray-700 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
                   >
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <option key={day} value={String(day).padStart(2, '0')}>{day}</option>
                     ))}
                   </select>
                 </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Time *</label>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 flex-1">
                   <input
                     type="time"
                     required
@@ -466,9 +463,9 @@ export default function ActivityModal({
                       const date = formData.start_datetime.split('T')[0] || '';
                       setFormData({ ...formData, start_datetime: `${date}T${e.target.value}` });
                     }}
-                    className="w-20 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
+                    className="h-9 flex-1 min-w-0 px-3 rounded-lg text-sm text-gray-700 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
                   />
-                  <span className="text-gray-400 text-xs">→</span>
+                  <span className="text-gray-400 text-sm font-medium">→</span>
                   <input
                     type="time"
                     required
@@ -477,7 +474,7 @@ export default function ActivityModal({
                       const date = formData.end_datetime.split('T')[0] || '';
                       setFormData({ ...formData, end_datetime: `${date}T${e.target.value}` });
                     }}
-                    className="w-20 px-1 py-1.5 rounded-md text-xs text-gray-700 bg-gray-50 border border-gray-200"
+                    className="h-9 flex-1 min-w-0 px-3 rounded-lg text-sm text-gray-700 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
                   />
                 </div>
               </div>
@@ -485,7 +482,7 @@ export default function ActivityModal({
 
             {/* Address */}
             <div>
-              <label className="block text-[10px] font-semibold text-gray-500 mb-0.5">Address</label>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Address</label>
               <AddressAutocomplete
                 value={formData.address}
                 onChange={(address) => setFormData({ ...formData, address })}
@@ -496,105 +493,98 @@ export default function ActivityModal({
                   }
                 }}
                 showMapsButton={!!formData.address}
+                className="h-9"
               />
             </div>
 
-            {/* Optional Details Section */}
-            <div className="pt-2 border-t border-gray-100">
-              <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                <span className="font-medium">Optional</span>
-                <div className="flex-1 h-px bg-gray-100" />
-              </div>
+            {/* Notes */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Notes</label>
+              <input
+                type="text"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
+                placeholder="Additional notes..."
+              />
+            </div>
 
-              {/* Cost - inline with currency */}
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-xs font-medium text-gray-500 w-12">Cost</label>
-                <div className="flex items-center gap-1 flex-1">
-                  <select
-                    value={formData.cost_currency}
-                    onChange={(e) => setFormData({ ...formData, cost_currency: e.target.value })}
-                    className="px-2 py-1.5 rounded-md text-xs text-gray-600 font-medium bg-gray-50 border border-gray-200"
-                  >
-                    {CURRENCIES.map((currency) => (
-                      <option key={currency} value={currency}>{currency}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.cost_amount}
-                    onChange={(e) => setFormData({ ...formData, cost_amount: e.target.value })}
-                    className="w-24 px-2 py-1.5 rounded-md text-xs text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              {/* Notes - single line input */}
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-xs font-medium text-gray-500 w-12">Notes</label>
+            {/* Cost */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Cost</label>
+              <div className="flex w-40">
+                <select
+                  value={formData.cost_currency}
+                  onChange={(e) => setFormData({ ...formData, cost_currency: e.target.value })}
+                  className="h-9 px-2 rounded-l-lg text-sm text-gray-600 bg-gray-100 border border-r-0 border-gray-200 focus:outline-none"
+                >
+                  {CURRENCIES.map((currency) => (
+                    <option key={currency} value={currency}>{currency}</option>
+                  ))}
+                </select>
                 <input
-                  type="text"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="flex-1 px-2 py-1.5 rounded-md text-xs text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200"
-                  placeholder="Add notes..."
+                  type="number"
+                  step="0.01"
+                  value={formData.cost_amount}
+                  onChange={(e) => setFormData({ ...formData, cost_amount: e.target.value })}
+                  className="flex-1 h-9 min-w-0 px-3 rounded-r-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
+                  placeholder="0.00"
                 />
               </div>
+            </div>
 
-              {/* Links - inline with tags */}
-              <div className="flex items-start gap-2">
-                <label className="text-xs font-medium text-gray-500 w-12 pt-1.5">Links</label>
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-1">
-                    {getLinksArray().map((link, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100"
-                      >
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline max-w-[120px] truncate"
-                          title={link}
-                        >
-                          {getLinkDisplayName(link)}
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLink(link)}
-                          className="text-blue-400 hover:text-blue-600"
-                        >
-                          <XMarkIcon className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        value={newLinkInput}
-                        onChange={(e) => setNewLinkInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddLink();
-                          }
-                        }}
-                        className="w-32 px-2 py-1 rounded-md text-xs text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200"
-                        placeholder="Add URL..."
-                      />
-                      {newLinkInput.trim() && (
-                        <button
-                          type="button"
-                          onClick={handleAddLink}
-                          className="p-1 rounded-md text-blue-500 hover:bg-blue-50"
-                        >
-                          <PlusIcon className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+            {/* Links */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Links</label>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {getLinksArray().map((link, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100"
+                  >
+                    <LinkIcon className="w-3 h-3 flex-shrink-0" />
+                    <a
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline max-w-[140px] truncate"
+                      title={link}
+                    >
+                      {getLinkDisplayName(link)}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveLink(link)}
+                      className="text-blue-400 hover:text-blue-600 ml-0.5"
+                    >
+                      <XMarkIcon className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={newLinkInput}
+                    onChange={(e) => setNewLinkInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddLink();
+                      }
+                    }}
+                    className="h-9 w-44 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
+                    placeholder="Add URL..."
+                  />
+                  {newLinkInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleAddLink}
+                      className="ml-1.5 h-7 w-7 rounded-lg text-white flex items-center justify-center"
+                      style={{ background: '#ff6b6b' }}
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -356,9 +356,9 @@ export default function DayColumn({
           return (
             <div
               key={index}
-              className={`h-10 relative cursor-pointer transition-colors ${
+              className={`h-10 relative cursor-pointer ${
                 isHourStart ? 'border-t border-gray-200/60' : ''
-              } hover:bg-[#ff6b6b]/5`}
+              }`}
               onClick={() => onCellClick(day.dateStr, slot.hour, slot.minute)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={handleDragLeave}

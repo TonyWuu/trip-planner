@@ -17,7 +17,7 @@ export default function FixedItemsBar({ flights, hotels, weekDays, weekStart, on
   if (weekDays.length === 0) return null;
 
   const renderBar = (item: FixedItem, type: 'flight' | 'hotel') => {
-    const { startCol, span } = getFixedItemSpan(item, weekStart, TRIP_START_DATE, TRIP_END_DATE);
+    const { startCol, span } = getFixedItemSpan(item, weekStart, TRIP_START_DATE, TRIP_END_DATE, weekDays.length);
 
     if (span === 0) return null;
 

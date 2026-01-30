@@ -1,4 +1,4 @@
-import { format, addDays, parseISO, isSameDay, isWithinInterval, differenceInMinutes } from 'date-fns';
+import { format, addDays, parseISO, isSameDay, isWithinInterval, differenceInMinutes, startOfDay } from 'date-fns';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { CITY_SCHEDULE, TIME_SLOTS } from './constants';
 import { DayInfo, Activity, FixedItem } from './types';
@@ -268,17 +268,17 @@ export function getFlightTimeSlotIndex(datetime: string): number {
   return getTimeSlotIndex(datetime);
 }
 
-export function getFixedItemSpan(item: FixedItem, weekStart: Date, tripStart: string, tripEnd: string): { startCol: number; span: number } {
-  const tripStartDate = parseISO(tripStart);
-  const tripEndDate = parseISO(tripEnd);
+export function getFixedItemSpan(item: FixedItem, weekStart: Date, tripStart: string, tripEnd: string, daysToShow: number = 7): { startCol: number; span: number } {
   const itemStart = new Date(item.start_datetime);
   const itemEnd = new Date(item.end_datetime);
 
-  // Calculate the visible days in this week
+  // Calculate the visible days in this week (use daysToShow, not hardcoded 7)
+  // Compare dates as strings (YYYY-MM-DD) to avoid timezone issues
   const visibleDays: Date[] = [];
-  for (let i = 0; i < 7; i++) {
-    const day = addDays(weekStart, i);
-    if (day >= tripStartDate && day <= tripEndDate) {
+  for (let i = 0; i < daysToShow; i++) {
+    const day = startOfDay(addDays(weekStart, i));
+    const dayStr = format(day, 'yyyy-MM-dd');
+    if (dayStr >= tripStart && dayStr <= tripEnd) {
       visibleDays.push(day);
     }
   }

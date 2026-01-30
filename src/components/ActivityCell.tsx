@@ -52,13 +52,26 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
   const [resizeHeight, setResizeHeight] = useState<number | null>(null);
   const [resizeTopOffset, setResizeTopOffset] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [previewTime, setPreviewTime] = useState<string | null>(null);
   const currentHeightRef = useRef<number>(0);
   const currentTopOffsetRef = useRef<number>(0);
   const wasResizingRef = useRef(false);
+  const cellRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use daySpan if provided (for multi-day activities), otherwise use full span
+  // Calculate sub-slot offset for 15-min positioning (needed for resize handlers)
+  const startDate = new Date(activity.start_datetime);
+  const endDate = new Date(activity.end_datetime);
+  const startMinute = startDate.getMinutes();
+  const minuteWithinSlot = startMinute % 30;
+  const subSlotOffset = isContinuation ? 0 : (minuteWithinSlot / 30) * 40;
+
+  // Calculate height based on actual duration in pixels (30 min = 40px)
+  // This ensures the bottom aligns correctly regardless of start time offset
   const span = daySpan ?? getActivitySpan(activity);
-  const baseHeightPx = span * 40;
+  const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+  const baseHeightPx = daySpan ? span * 40 : (durationMinutes / 30) * 40;
   const heightPx = resizeHeight ?? baseHeightPx;
 
   // Keep ref in sync with state
@@ -114,21 +127,58 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     e.preventDefault();
     setIsResizing(true);
 
-    const SLOT_HEIGHT = 40; // Each 30-min slot is 40px (h-10)
-    const SNAP_HEIGHT = 20; // Snap to 15-min increments (20px)
-    const MIN_HEIGHT = 20; // Minimum 15 minutes
+    const SLOT_HEIGHT = 40;
+    const SNAP_HEIGHT = 20;
+    const MIN_HEIGHT = 20;
     const startY = e.clientY;
     const startHeight = baseHeightPx;
     let currentDelta = 0;
+    let pendingHeight = startHeight;
+
+    const updateVisuals = () => {
+      if (cellRef.current) {
+        cellRef.current.style.height = `${pendingHeight - 2}px`;
+      }
+      rafRef.current = null;
+    };
+
+    const syncState = (height: number) => {
+      const deltaHeight = height - baseHeightPx;
+      const deltaMinutes = (deltaHeight / SLOT_HEIGHT) * 30;
+      const endDate = new Date(activity.end_datetime);
+      const startDate = new Date(activity.start_datetime);
+      const rawNewEnd = new Date(endDate.getTime() + deltaMinutes * 60 * 1000);
+      // Snap preview to nearest 15-minute boundary
+      const minutes = rawNewEnd.getMinutes();
+      const snappedMinutes = Math.round(minutes / 15) * 15;
+      const newEnd = new Date(rawNewEnd);
+      newEnd.setMinutes(snappedMinutes % 60);
+      if (snappedMinutes >= 60) {
+        newEnd.setHours(newEnd.getHours() + 1);
+      }
+      // Sync both height state and preview time together to avoid stale renders
+      setResizeHeight(height);
+      setPreviewTime(`${formatTime(startDate)} - ${formatTime(newEnd)}`);
+    };
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaY = moveEvent.clientY - startY;
       currentDelta = deltaY;
+      pendingHeight = Math.max(MIN_HEIGHT, startHeight + deltaY);
+      currentHeightRef.current = pendingHeight;
 
-      // Show smooth resize without snapping during drag
-      const newHeight = Math.max(MIN_HEIGHT, startHeight + deltaY);
-      setResizeHeight(newHeight);
-      currentHeightRef.current = newHeight;
+      // Use RAF for smooth visual updates
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(updateVisuals);
+      }
+
+      // Debounce state sync to reduce re-renders
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+      }
+      previewDebounceRef.current = setTimeout(() => {
+        syncState(pendingHeight);
+      }, 30);
     };
 
     const handleMouseUp = () => {
@@ -137,17 +187,34 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
 
-      // Snap to nearest 15-min increment on release
-      const snappedDelta = Math.round(currentDelta / SNAP_HEIGHT) * SNAP_HEIGHT;
-      const deltaMinutes = (snappedDelta / SLOT_HEIGHT) * 30; // Convert px to minutes
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+        previewDebounceRef.current = null;
+      }
 
+      // Calculate the new end time based on pixel delta
+      const deltaMinutes = (currentDelta / SLOT_HEIGHT) * 30;
       const endDate = new Date(activity.end_datetime);
-      const newEndDate = new Date(endDate.getTime() + deltaMinutes * 60 * 1000);
+      const rawNewEndDate = new Date(endDate.getTime() + deltaMinutes * 60 * 1000);
 
-      // Ensure minimum duration of 15 minutes
+      // Snap the final time to nearest 15-minute boundary
+      const minutes = rawNewEndDate.getMinutes();
+      const snappedMinutes = Math.round(minutes / 15) * 15;
+      const newEndDate = new Date(rawNewEndDate);
+      newEndDate.setMinutes(snappedMinutes % 60);
+      if (snappedMinutes >= 60) {
+        newEndDate.setHours(newEndDate.getHours() + 1);
+      }
+      newEndDate.setSeconds(0, 0);
+
       const startDate = new Date(activity.start_datetime);
       if (newEndDate.getTime() - startDate.getTime() < 15 * 60 * 1000) {
         setResizeHeight(null);
+        setPreviewTime(null);
         return;
       }
 
@@ -155,6 +222,7 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
         onResize(activity.id, formatDateTime(newEndDate));
       }
       setResizeHeight(null);
+      setPreviewTime(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -166,25 +234,63 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     e.preventDefault();
     setIsResizing(true);
 
-    const SLOT_HEIGHT = 40; // Each 30-min slot is 40px (h-10)
-    const SNAP_HEIGHT = 20; // Snap to 15-min increments (20px)
-    const MIN_HEIGHT = 20; // Minimum 15 minutes
+    const SLOT_HEIGHT = 40;
+    const SNAP_HEIGHT = 20;
+    const MIN_HEIGHT = 20;
     const startY = e.clientY;
     const startHeight = baseHeightPx;
+    const startTop = subSlotOffset;
     let currentDelta = 0;
+    let pendingHeight = startHeight;
+    let pendingTop = startTop;
+
+    const updateVisuals = () => {
+      if (cellRef.current) {
+        cellRef.current.style.height = `${pendingHeight - 2}px`;
+        cellRef.current.style.top = `${pendingTop}px`;
+      }
+      rafRef.current = null;
+    };
+
+    const syncState = (height: number, topOffset: number) => {
+      const deltaMinutes = (topOffset / SLOT_HEIGHT) * 30;
+      const startDate = new Date(activity.start_datetime);
+      const endDate = new Date(activity.end_datetime);
+      const rawNewStart = new Date(startDate.getTime() + deltaMinutes * 60 * 1000);
+      // Snap preview to nearest 15-minute boundary
+      const minutes = rawNewStart.getMinutes();
+      const snappedMinutes = Math.round(minutes / 15) * 15;
+      const newStart = new Date(rawNewStart);
+      newStart.setMinutes(snappedMinutes % 60);
+      if (snappedMinutes >= 60) {
+        newStart.setHours(newStart.getHours() + 1);
+      }
+      // Sync height, top offset, and preview time together to avoid stale renders
+      setResizeHeight(height);
+      setResizeTopOffset(topOffset);
+      setPreviewTime(`${formatTime(newStart)} - ${formatTime(endDate)}`);
+    };
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaY = moveEvent.clientY - startY;
       currentDelta = deltaY;
+      pendingHeight = Math.max(MIN_HEIGHT, startHeight - deltaY);
+      pendingTop = startTop + deltaY;
+      currentHeightRef.current = pendingHeight;
+      currentTopOffsetRef.current = deltaY;
 
-      // Show smooth resize without snapping during drag
-      // For top edge: negative deltaY = grow (move top up), positive = shrink (move top down)
-      const newHeight = Math.max(MIN_HEIGHT, startHeight - deltaY);
-      const newTopOffset = deltaY;
-      setResizeHeight(newHeight);
-      setResizeTopOffset(newTopOffset);
-      currentHeightRef.current = newHeight;
-      currentTopOffsetRef.current = newTopOffset;
+      // Use RAF for smooth visual updates
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(updateVisuals);
+      }
+
+      // Debounce state sync to reduce re-renders
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+      }
+      previewDebounceRef.current = setTimeout(() => {
+        syncState(pendingHeight, deltaY);
+      }, 30);
     };
 
     const handleMouseUp = () => {
@@ -193,18 +299,35 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
 
-      // Snap to nearest 15-min increment on release
-      const snappedDelta = Math.round(currentDelta / SNAP_HEIGHT) * SNAP_HEIGHT;
-      const deltaMinutes = (snappedDelta / SLOT_HEIGHT) * 30; // Convert px to minutes
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+        previewDebounceRef.current = null;
+      }
 
+      // Calculate the new start time based on pixel delta
+      const deltaMinutes = (currentDelta / SLOT_HEIGHT) * 30;
       const startDate = new Date(activity.start_datetime);
       const endDate = new Date(activity.end_datetime);
-      const newStartDate = new Date(startDate.getTime() + deltaMinutes * 60 * 1000);
+      const rawNewStartDate = new Date(startDate.getTime() + deltaMinutes * 60 * 1000);
 
-      // Ensure minimum duration of 15 minutes
+      // Snap the final time to nearest 15-minute boundary
+      const minutes = rawNewStartDate.getMinutes();
+      const snappedMinutes = Math.round(minutes / 15) * 15;
+      const newStartDate = new Date(rawNewStartDate);
+      newStartDate.setMinutes(snappedMinutes % 60);
+      if (snappedMinutes >= 60) {
+        newStartDate.setHours(newStartDate.getHours() + 1);
+      }
+      newStartDate.setSeconds(0, 0);
+
       if (endDate.getTime() - newStartDate.getTime() < 15 * 60 * 1000) {
         setResizeHeight(null);
         setResizeTopOffset(0);
+        setPreviewTime(null);
         return;
       }
 
@@ -213,17 +336,31 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       }
       setResizeHeight(null);
       setResizeTopOffset(0);
+      setPreviewTime(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [baseHeightPx, activity.start_datetime, activity.end_datetime, activity.id, onResize]);
+  }, [baseHeightPx, subSlotOffset, activity.start_datetime, activity.end_datetime, activity.id, onResize]);
 
   // Reset resize state when activity changes
   useEffect(() => {
     setResizeHeight(null);
     setResizeTopOffset(0);
+    setPreviewTime(null);
   }, [activity.start_datetime, activity.end_datetime]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+      }
+    };
+  }, []);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
@@ -283,27 +420,21 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
   const widthPercent = 100 / totalColumns;
   const leftPercent = column * widthPercent;
 
-  // Calculate sub-slot offset for 15-min positioning
-  // Each 30-min slot is 40px, so each minute is 40/30 = 1.33px
-  const startDate = new Date(activity.start_datetime);
-  const startMinute = startDate.getMinutes();
-  const minuteWithinSlot = startMinute % 30; // 0-29 minutes within the slot
-  const subSlotOffset = isContinuation ? 0 : (minuteWithinSlot / 30) * 40;
-
   return (
     <div
+      ref={cellRef}
       draggable={!isResizing}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={isResizing ? undefined : handleClick}
-      className={`absolute rounded-lg overflow-hidden z-10 group transition-all duration-150 ${
+      className={`absolute rounded-lg overflow-hidden z-10 group ${
         isDragging
           ? 'opacity-30 pointer-events-none'
           : isAnyDragActive
           ? 'pointer-events-none'
           : isResizing
           ? 'cursor-ns-resize z-30 shadow-lg'
-          : 'cursor-grab active:cursor-grabbing active:scale-[0.98] hover:shadow-md hover:z-20'
+          : 'transition-all duration-150 cursor-grab active:cursor-grabbing active:scale-[0.98] hover:shadow-md hover:z-20'
       }`}
       style={{
         height: `${heightPx - 2}px`,
@@ -337,27 +468,7 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
         </div>
         {(span > 1 || isResizing) && (
           <p className="text-[10px] truncate mt-0.5 opacity-75" style={{ color: bgColor }}>
-            {isResizing
-              ? (() => {
-                  // Calculate new times based on resize
-                  const SLOT_HEIGHT = 40;
-                  const startDate = new Date(activity.start_datetime);
-                  const endDate = new Date(activity.end_datetime);
-
-                  if (resizeTopOffset !== 0) {
-                    // Resizing from top - show new start time
-                    const deltaMinutes = Math.round((resizeTopOffset / SLOT_HEIGHT) * 30 / 15) * 15;
-                    const newStart = new Date(startDate.getTime() + deltaMinutes * 60 * 1000);
-                    return `${formatTime(newStart)} - ${formatTime(endDate)}`;
-                  } else {
-                    // Resizing from bottom - show new end time
-                    const deltaHeight = heightPx - baseHeightPx;
-                    const deltaMinutes = Math.round((deltaHeight / SLOT_HEIGHT) * 30 / 15) * 15;
-                    const newEnd = new Date(endDate.getTime() + deltaMinutes * 60 * 1000);
-                    return `${formatTime(startDate)} - ${formatTime(newEnd)}`;
-                  }
-                })()
-              : formatTimeRange(activity.start_datetime, activity.end_datetime)}
+            {previewTime ?? formatTimeRange(activity.start_datetime, activity.end_datetime)}
           </p>
         )}
         {span > 2 && activity.address && !isResizing && (
