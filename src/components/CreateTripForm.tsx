@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { nanoid } from 'nanoid';
 import { createTrip } from '@/lib/supabase';
-import { PlusIcon } from './Icons';
 
 export default function CreateTripForm() {
   const router = useRouter();
@@ -37,14 +36,25 @@ export default function CreateTripForm() {
       <button
         onClick={handleCreateTrip}
         disabled={creating}
-        className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25"
+        className="flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg text-white bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg shadow-violet-200 hover:shadow-xl hover:shadow-violet-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <PlusIcon className="w-5 h-5" />
-        {creating ? 'Creating...' : 'Create New Trip'}
+        {creating ? (
+          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+        )}
+        {creating ? 'Creating...' : 'Start Planning'}
       </button>
 
       {error && (
-        <p className="text-red-500 text-sm max-w-md text-center">{error}</p>
+        <div className="px-4 py-2 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">
+          {error}
+        </div>
       )}
     </div>
   );

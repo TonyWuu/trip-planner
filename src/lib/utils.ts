@@ -1,6 +1,5 @@
-import { format, addDays, parseISO, startOfWeek, endOfWeek, isSameDay, isWithinInterval, differenceInMinutes } from 'date-fns';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
-import { CITY_SCHEDULE, TRIP_TIMEZONE, TIME_SLOTS } from './constants';
+import { format, addDays, parseISO, isSameDay, isWithinInterval, differenceInMinutes } from 'date-fns';
+import { CITY_SCHEDULE, TIME_SLOTS } from './constants';
 import { DayInfo, Activity, FixedItem } from './types';
 
 export function getCityForDate(dateStr: string): string {
@@ -60,7 +59,8 @@ export function formatDateHeader(date: Date): string {
 }
 
 export function formatTime(datetime: string): string {
-  const date = toZonedTime(parseISO(datetime), TRIP_TIMEZONE);
+  // Handle both ISO strings and datetime-local format
+  const date = datetime.includes('T') ? new Date(datetime) : parseISO(datetime);
   return format(date, 'h:mma').toLowerCase();
 }
 
@@ -69,17 +69,18 @@ export function formatTimeRange(start: string, end: string): string {
 }
 
 export function getTimeSlotIndex(datetime: string): number {
-  const date = toZonedTime(parseISO(datetime), TRIP_TIMEZONE);
+  // Handle both ISO strings and datetime-local format
+  const date = new Date(datetime);
   const hour = date.getHours();
   const minute = date.getMinutes();
 
   // Find the index in TIME_SLOTS
   for (let i = 0; i < TIME_SLOTS.length; i++) {
     const slot = TIME_SLOTS[i];
-    if (slot.hour === hour && slot.minute === minute) {
+    if (slot.hour === hour && slot.minute <= minute && minute < slot.minute + 30) {
       return i;
     }
-    if (slot.hour === hour && minute < slot.minute + 30 && minute >= slot.minute) {
+    if (slot.hour === hour && slot.minute === minute) {
       return i;
     }
   }
@@ -91,34 +92,24 @@ export function getTimeSlotIndex(datetime: string): number {
 }
 
 export function getActivitySpan(activity: Activity): number {
-  const start = parseISO(activity.start_datetime);
-  const end = parseISO(activity.end_datetime);
+  const start = new Date(activity.start_datetime);
+  const end = new Date(activity.end_datetime);
   const minutes = differenceInMinutes(end, start);
-  return Math.ceil(minutes / 30);
+  return Math.max(1, Math.ceil(minutes / 30));
 }
 
-export function getActivitiesForDayAndSlot(
-  activities: Activity[],
-  dateStr: string,
-  slotIndex: number
-): Activity[] {
-  return activities.filter(activity => {
-    const startDate = toZonedTime(parseISO(activity.start_datetime), TRIP_TIMEZONE);
-    const activityDateStr = format(startDate, 'yyyy-MM-dd');
-
-    if (activityDateStr !== dateStr) return false;
-
-    const activitySlotIndex = getTimeSlotIndex(activity.start_datetime);
-    return activitySlotIndex === slotIndex;
-  });
+export function getActivityDateStr(activity: Activity): string {
+  const date = new Date(activity.start_datetime);
+  return format(date, 'yyyy-MM-dd');
 }
 
 export function isActivityInSlot(activity: Activity, dateStr: string, slotIndex: number): boolean {
-  const startDate = toZonedTime(parseISO(activity.start_datetime), TRIP_TIMEZONE);
-  const endDate = toZonedTime(parseISO(activity.end_datetime), TRIP_TIMEZONE);
-  const activityDateStr = format(startDate, 'yyyy-MM-dd');
+  const activityDateStr = getActivityDateStr(activity);
 
   if (activityDateStr !== dateStr) return false;
+
+  const startDate = new Date(activity.start_datetime);
+  const endDate = new Date(activity.end_datetime);
 
   const slot = TIME_SLOTS[slotIndex];
   const slotStart = new Date(startDate);
@@ -130,34 +121,11 @@ export function isActivityInSlot(activity: Activity, dateStr: string, slotIndex:
   return startDate < slotEnd && endDate > slotStart;
 }
 
-export function createDateTimeString(dateStr: string, hour: number, minute: number): string {
-  return formatInTimeZone(
-    new Date(`${dateStr}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`),
-    TRIP_TIMEZONE,
-    "yyyy-MM-dd'T'HH:mm:ssXXX"
-  );
-}
-
-export function getFixedItemsForDateRange(
-  items: FixedItem[],
-  startDate: string,
-  endDate: string
-): FixedItem[] {
-  const start = parseISO(startDate);
-  const end = parseISO(endDate);
-
-  return items.filter(item => {
-    const itemStart = parseISO(item.start_datetime);
-    const itemEnd = parseISO(item.end_datetime);
-    return itemStart <= end && itemEnd >= start;
-  });
-}
-
 export function getFixedItemSpan(item: FixedItem, weekStart: Date, tripStart: string, tripEnd: string): { startCol: number; span: number } {
   const tripStartDate = parseISO(tripStart);
   const tripEndDate = parseISO(tripEnd);
-  const itemStart = toZonedTime(parseISO(item.start_datetime), TRIP_TIMEZONE);
-  const itemEnd = toZonedTime(parseISO(item.end_datetime), TRIP_TIMEZONE);
+  const itemStart = new Date(item.start_datetime);
+  const itemEnd = new Date(item.end_datetime);
 
   // Calculate the visible days in this week
   const visibleDays: Date[] = [];

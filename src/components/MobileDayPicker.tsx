@@ -10,6 +10,18 @@ interface MobileDayPickerProps {
   onDayChange: (index: number) => void;
 }
 
+function getCityStyle(city: string): { bg: string; text: string } {
+  const cityLower = city.toLowerCase();
+  if (cityLower.includes('hong kong')) {
+    return { bg: 'bg-rose-100', text: 'text-rose-700' };
+  } else if (cityLower.includes('shanghai')) {
+    return { bg: 'bg-blue-100', text: 'text-blue-700' };
+  } else if (cityLower.includes('chengdu')) {
+    return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
+  }
+  return { bg: 'bg-gray-100', text: 'text-gray-700' };
+}
+
 export default function MobileDayPicker({
   days,
   currentDayIndex,
@@ -21,35 +33,43 @@ export default function MobileDayPicker({
 
   const canGoPrev = currentDayIndex > 0;
   const canGoNext = currentDayIndex < days.length - 1;
+  const cityStyle = getCityStyle(currentDay.city);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 md:hidden">
-      <button
-        onClick={() => canGoPrev && onDayChange(currentDayIndex - 1)}
-        disabled={!canGoPrev}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        aria-label="Previous day"
-      >
-        <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-      </button>
+    <div className="bg-white border-b border-gray-200 md:hidden">
+      <div className="flex items-center justify-between px-4 py-3">
+        <button
+          onClick={() => canGoPrev && onDayChange(currentDayIndex - 1)}
+          disabled={!canGoPrev}
+          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          aria-label="Previous day"
+        >
+          <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
+        </button>
 
-      <div className="text-center">
-        <div className="text-lg font-semibold text-gray-900 dark:text-white">
-          {formatDateHeader(currentDay.date)} ({currentDay.dayOfWeek})
+        <div className="text-center">
+          <div className="text-xl font-bold text-gray-900">
+            {formatDateHeader(currentDay.date)}
+          </div>
+          <div className="text-sm text-gray-500">
+            {currentDay.dayOfWeek}
+          </div>
+          {currentDay.city && (
+            <span className={`inline-block mt-1 px-3 py-0.5 text-xs font-semibold rounded-full ${cityStyle.bg} ${cityStyle.text}`}>
+              {currentDay.city}
+            </span>
+          )}
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          {currentDay.city}
-        </div>
+
+        <button
+          onClick={() => canGoNext && onDayChange(currentDayIndex + 1)}
+          disabled={!canGoNext}
+          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          aria-label="Next day"
+        >
+          <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+        </button>
       </div>
-
-      <button
-        onClick={() => canGoNext && onDayChange(currentDayIndex + 1)}
-        disabled={!canGoNext}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        aria-label="Next day"
-      >
-        <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-      </button>
     </div>
   );
 }

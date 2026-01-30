@@ -4,8 +4,8 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   {
     type: 'flight',
     name: 'CX 805: YYZ → HKG',
-    start_datetime: '2025-02-20T02:55:00+08:00', // Feb 19 1:55pm EST = Feb 20 2:55am HKT
-    end_datetime: '2025-02-20T18:45:00+08:00',
+    start_datetime: '2025-02-20T02:55',
+    end_datetime: '2025-02-20T18:45',
     details: {
       flight_number: 'CX 805',
       airline: 'Cathay Pacific',
@@ -19,8 +19,8 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   {
     type: 'flight',
     name: 'FM 3022: HKG → PVG',
-    start_datetime: '2025-02-28T15:25:00+08:00',
-    end_datetime: '2025-02-28T18:05:00+08:00',
+    start_datetime: '2025-02-28T15:25',
+    end_datetime: '2025-02-28T18:05',
     details: {
       flight_number: 'FM 3022',
       airline: 'Shanghai Airlines',
@@ -34,8 +34,8 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   {
     type: 'flight',
     name: 'HO 1059: SHA → TFU',
-    start_datetime: '2025-03-04T13:30:00+08:00',
-    end_datetime: '2025-03-04T16:55:00+08:00',
+    start_datetime: '2025-03-04T13:30',
+    end_datetime: '2025-03-04T16:55',
     details: {
       flight_number: 'HO 1059',
       airline: 'Juneyao Air',
@@ -49,8 +49,8 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   {
     type: 'flight',
     name: 'ZH 8033: TFU → HKG',
-    start_datetime: '2025-03-07T15:35:00+08:00',
-    end_datetime: '2025-03-07T18:10:00+08:00',
+    start_datetime: '2025-03-07T15:35',
+    end_datetime: '2025-03-07T18:10',
     details: {
       flight_number: 'ZH 8033',
       airline: 'Shenzhen Airlines',
@@ -64,8 +64,8 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   {
     type: 'flight',
     name: 'CX 828: HKG → YYZ',
-    start_datetime: '2025-03-08T10:25:00+08:00',
-    end_datetime: '2025-03-08T14:15:00-05:00', // Arrives 2:15pm EST same day
+    start_datetime: '2025-03-08T10:25',
+    end_datetime: '2025-03-08T14:15',
     details: {
       flight_number: 'CX 828',
       airline: 'Cathay Pacific',
@@ -82,8 +82,8 @@ export const SEED_HOTELS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = [
   {
     type: 'hotel',
     name: 'Kornhill Garden, Hong Kong',
-    start_datetime: '2025-02-20T15:00:00+08:00', // Check-in Feb 20
-    end_datetime: '2025-02-28T11:00:00+08:00',   // Check-out Feb 28
+    start_datetime: '2025-02-20T15:00',
+    end_datetime: '2025-02-28T11:00',
     details: {
       address: '1 Hong On St, Kornhill, Hong Kong',
       city: 'Hong Kong',
@@ -93,8 +93,8 @@ export const SEED_HOTELS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = [
   {
     type: 'hotel',
     name: 'Langham Xintiandi, Shanghai',
-    start_datetime: '2025-02-28T15:00:00+08:00',
-    end_datetime: '2025-03-04T11:00:00+08:00',
+    start_datetime: '2025-02-28T15:00',
+    end_datetime: '2025-03-04T11:00',
     details: {
       address: '99 Madang Rd, Huangpu, Shanghai',
       city: 'Shanghai',
@@ -104,8 +104,8 @@ export const SEED_HOTELS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = [
   {
     type: 'hotel',
     name: 'Ritz-Carlton, Chengdu',
-    start_datetime: '2025-03-04T15:00:00+08:00',
-    end_datetime: '2025-03-07T11:00:00+08:00',
+    start_datetime: '2025-03-04T15:00',
+    end_datetime: '2025-03-07T11:00',
     details: {
       address: '269 Shuncheng Ave, Luomashi, Chengdu',
       city: 'Chengdu',
@@ -115,8 +115,6 @@ export const SEED_HOTELS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = [
 ];
 
 export const SEED_CATEGORIES: Omit<Category, 'id' | 'trip_id' | 'created_at'>[] = [
-  { name: 'Flight', color: '#3B82F6' },
-  { name: 'Hotel', color: '#22C55E' },
   { name: 'Restaurant', color: '#F97316' },
   { name: 'Activity', color: '#A855F7' },
   { name: 'Transport', color: '#6B7280' },

@@ -87,3 +87,15 @@ export interface ActivityFormData {
   cost_currency: string;
   links: string;
 }
+
+export interface WishlistItem {
+  id: string;
+  trip_id: string;
+  name: string;
+  category: string;
+  duration_minutes: number;
+  address: string | null;
+  notes: string | null;
+  links: string[] | null;
+  created_at: string;
+}

@@ -1,10 +1,34 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Trip, FixedItem, Activity, Category } from './types';
+import { Trip, FixedItem, Activity, Category, WishlistItem } from './types';
 import { SEED_FLIGHTS, SEED_HOTELS, SEED_CATEGORIES } from './seed-data';
 import { TRIP_NAME, TRIP_START_DATE, TRIP_END_DATE, TRIP_TIMEZONE } from './constants';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+// Normalize datetime strings from Supabase to strip timezone info
+// Supabase returns "2025-02-20T08:00:00+00:00" but we want "2025-02-20T08:00"
+function normalizeDateTime(datetime: string): string {
+  if (!datetime) return datetime;
+  // Take just the first 16 characters: "2025-02-20T08:00"
+  return datetime.slice(0, 16);
+}
+
+function normalizeActivity(activity: Activity): Activity {
+  return {
+    ...activity,
+    start_datetime: normalizeDateTime(activity.start_datetime),
+    end_datetime: normalizeDateTime(activity.end_datetime),
+  };
+}
+
+function normalizeFixedItem(item: FixedItem): FixedItem {
+  return {
+    ...item,
+    start_datetime: normalizeDateTime(item.start_datetime),
+    end_datetime: normalizeDateTime(item.end_datetime),
+  };
+}
 
 let supabaseInstance: SupabaseClient | null = null;
 
@@ -120,7 +144,7 @@ export async function getFixedItems(tripId: string): Promise<FixedItem[]> {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(normalizeFixedItem);
 }
 
 export async function updateFixedItem(id: string, updates: Partial<FixedItem>): Promise<FixedItem | null> {
@@ -137,7 +161,7 @@ export async function updateFixedItem(id: string, updates: Partial<FixedItem>): 
     return null;
   }
 
-  return data;
+  return data ? normalizeFixedItem(data) : null;
 }
 
 export async function deleteFixedItem(id: string): Promise<boolean> {
@@ -169,7 +193,7 @@ export async function getActivities(tripId: string): Promise<Activity[]> {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(normalizeActivity);
 }
 
 export async function createActivity(activity: Omit<Activity, 'id' | 'created_at' | 'updated_at'>): Promise<Activity | null> {
@@ -185,7 +209,7 @@ export async function createActivity(activity: Omit<Activity, 'id' | 'created_at
     return null;
   }
 
-  return data;
+  return data ? normalizeActivity(data) : null;
 }
 
 export async function updateActivity(id: string, updates: Partial<Activity>): Promise<Activity | null> {
@@ -202,7 +226,7 @@ export async function updateActivity(id: string, updates: Partial<Activity>): Pr
     return null;
   }
 
-  return data;
+  return data ? normalizeActivity(data) : null;
 }
 
 export async function deleteActivity(id: string): Promise<boolean> {
@@ -253,6 +277,86 @@ export async function createCategory(category: Omit<Category, 'id' | 'created_at
   return data;
 }
 
+export async function deleteCategory(id: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting category:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Wishlist functions
+export async function getWishlistItems(tripId: string): Promise<WishlistItem[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('wishlist_items')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching wishlist items:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function createWishlistItem(item: Omit<WishlistItem, 'id' | 'created_at'>): Promise<WishlistItem | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('wishlist_items')
+    .insert(item)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating wishlist item:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateWishlistItem(id: string, updates: Partial<WishlistItem>): Promise<WishlistItem | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('wishlist_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating wishlist item:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function deleteWishlistItem(id: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('wishlist_items')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting wishlist item:', error);
+    return false;
+  }
+
+  return true;
+}
+
 // Realtime subscriptions
 export function subscribeToActivities(
   tripId: string,
@@ -271,7 +375,7 @@ export function subscribeToActivities(
         table: 'activities',
         filter: `trip_id=eq.${tripId}`,
       },
-      (payload) => onInsert(payload.new as Activity)
+      (payload) => onInsert(normalizeActivity(payload.new as Activity))
     )
     .on(
       'postgres_changes',
@@ -281,7 +385,7 @@ export function subscribeToActivities(
         table: 'activities',
         filter: `trip_id=eq.${tripId}`,
       },
-      (payload) => onUpdate(payload.new as Activity)
+      (payload) => onUpdate(normalizeActivity(payload.new as Activity))
     )
     .on(
       'postgres_changes',
@@ -317,7 +421,7 @@ export function subscribeToFixedItems(
         table: 'fixed_items',
         filter: `trip_id=eq.${tripId}`,
       },
-      (payload) => onInsert(payload.new as FixedItem)
+      (payload) => onInsert(normalizeFixedItem(payload.new as FixedItem))
     )
     .on(
       'postgres_changes',
@@ -327,7 +431,7 @@ export function subscribeToFixedItems(
         table: 'fixed_items',
         filter: `trip_id=eq.${tripId}`,
       },
-      (payload) => onUpdate(payload.new as FixedItem)
+      (payload) => onUpdate(normalizeFixedItem(payload.new as FixedItem))
     )
     .on(
       'postgres_changes',
@@ -335,6 +439,52 @@ export function subscribeToFixedItems(
         event: 'DELETE',
         schema: 'public',
         table: 'fixed_items',
+        filter: `trip_id=eq.${tripId}`,
+      },
+      (payload) => onDelete(payload.old.id as string)
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeToWishlistItems(
+  tripId: string,
+  onInsert: (item: WishlistItem) => void,
+  onUpdate: (item: WishlistItem) => void,
+  onDelete: (id: string) => void
+) {
+  const supabase = getSupabase();
+  const channel = supabase
+    .channel(`wishlist_items:${tripId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'wishlist_items',
+        filter: `trip_id=eq.${tripId}`,
+      },
+      (payload) => onInsert(payload.new as WishlistItem)
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'wishlist_items',
+        filter: `trip_id=eq.${tripId}`,
+      },
+      (payload) => onUpdate(payload.new as WishlistItem)
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'wishlist_items',
         filter: `trip_id=eq.${tripId}`,
       },
       (payload) => onDelete(payload.old.id as string)

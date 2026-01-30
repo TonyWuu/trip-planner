@@ -4,18 +4,22 @@ import { TIME_SLOTS } from '@/lib/constants';
 
 export default function TimeColumn() {
   return (
-    <div className="sticky left-0 z-20 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-      {/* Empty header cell to align with day headers */}
-      <div className="h-16 border-b border-gray-200 dark:border-gray-700" />
+    <div className="sticky left-0 z-20 bg-gradient-to-r from-slate-50 to-transparent">
+      {/* Header spacer */}
+      <div className="h-14" />
 
       {/* Time slots */}
-      <div className="divide-y divide-gray-100 dark:divide-gray-800">
+      <div className="pr-2">
         {TIME_SLOTS.map((slot, index) => (
           <div
             key={index}
-            className="h-10 w-16 flex items-center justify-end pr-2 text-xs text-gray-500 dark:text-gray-400"
+            className="h-10 w-14 flex items-center justify-end"
           >
-            {slot.minute === 0 && slot.label}
+            {slot.minute === 0 && (
+              <span className="text-[11px] font-medium text-slate-400 tabular-nums">
+                {slot.label}
+              </span>
+            )}
           </div>
         ))}
       </div>

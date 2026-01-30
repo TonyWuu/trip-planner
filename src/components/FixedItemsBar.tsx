@@ -1,6 +1,6 @@
 'use client';
 
-import { FixedItem, DayInfo, FlightDetails, HotelDetails } from '@/lib/types';
+import { FixedItem, DayInfo } from '@/lib/types';
 import { getFixedItemSpan, formatTime } from '@/lib/utils';
 import { TRIP_START_DATE, TRIP_END_DATE } from '@/lib/constants';
 import { PlaneIcon, BuildingIcon } from './Icons';
@@ -22,10 +22,7 @@ export default function FixedItemsBar({ flights, hotels, weekDays, weekStart, on
     if (span === 0) return null;
 
     const isFlightType = type === 'flight';
-    const bgColor = isFlightType ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600';
-    const Icon = isFlightType ? PlaneIcon : BuildingIcon;
 
-    // Calculate position and width based on visible columns
     const leftPercent = (startCol / weekDays.length) * 100;
     const widthPercent = (span / weekDays.length) * 100;
 
@@ -33,38 +30,43 @@ export default function FixedItemsBar({ flights, hotels, weekDays, weekStart, on
       <div
         key={item.id}
         onClick={() => onItemClick(item)}
-        className={`absolute h-6 ${bgColor} rounded-md flex items-center px-2 text-white text-xs font-medium overflow-hidden shadow-sm cursor-pointer transition-colors`}
+        className={`absolute h-7 rounded-lg flex items-center px-2.5 text-xs font-medium overflow-hidden cursor-pointer transition-all hover:shadow-md ${
+          isFlightType
+            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+        }`}
         style={{
           left: `${leftPercent}%`,
-          width: `${widthPercent}%`,
+          width: `calc(${widthPercent}% - 4px)`,
+          marginLeft: '2px',
         }}
         title={`Click to edit: ${item.name}`}
       >
-        <Icon className="w-3 h-3 mr-1 flex-shrink-0" />
-        <span className="truncate">
-          {item.name}
-          {isFlightType && (
-            <span className="ml-1 opacity-75">
-              {formatTime(item.start_datetime)}
-            </span>
-          )}
-        </span>
+        {isFlightType ? (
+          <PlaneIcon className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+        ) : (
+          <BuildingIcon className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+        )}
+        <span className="truncate font-semibold">{item.name}</span>
+        {isFlightType && (
+          <span className="ml-1.5 opacity-70 flex-shrink-0">{formatTime(item.start_datetime)}</span>
+        )}
       </div>
     );
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-white border-b border-gray-200">
       {/* Flights row */}
-      <div className="relative h-8 ml-16">
-        <div className="absolute inset-0 flex items-center">
+      <div className="relative h-9 ml-16">
+        <div className="absolute inset-0 flex items-center px-0.5">
           {flights.map((flight) => renderBar(flight, 'flight'))}
         </div>
       </div>
 
       {/* Hotels row */}
-      <div className="relative h-8 ml-16 border-t border-gray-200 dark:border-gray-700">
-        <div className="absolute inset-0 flex items-center">
+      <div className="relative h-9 ml-16">
+        <div className="absolute inset-0 flex items-center px-0.5">
           {hotels.map((hotel) => renderBar(hotel, 'hotel'))}
         </div>
       </div>

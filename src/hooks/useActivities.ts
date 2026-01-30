@@ -71,12 +71,22 @@ export function useActivities(tripId: string | undefined) {
   );
 
   const updateActivity = useCallback(async (id: string, updates: Partial<Activity>) => {
+    // Optimistic update - update UI immediately
+    setActivities((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
+    );
+
+    // Then sync with database in background
     const updated = await updateActivityApi(id, updates);
-    if (updated) {
-      setActivities((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    if (!updated) {
+      // Rollback on error - refetch to get correct state
+      if (tripId) {
+        const data = await getActivities(tripId);
+        setActivities(data);
+      }
     }
     return updated;
-  }, []);
+  }, [tripId]);
 
   const deleteActivity = useCallback(async (id: string) => {
     const success = await deleteActivityApi(id);
