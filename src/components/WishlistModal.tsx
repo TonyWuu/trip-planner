@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Category, WishlistItem } from '@/lib/types';
-import { XMarkIcon, TrashIcon, MapPinIcon, PlusIcon } from './Icons';
+import { XMarkIcon, TrashIcon, PlusIcon } from './Icons';
 import { getMapsUrl } from '@/lib/utils';
 import { createCategory, deleteCategory } from '@/lib/supabase';
+import AddressAutocomplete from './AddressAutocomplete';
 
 // Available colors for new categories
 const CATEGORY_COLORS = [
@@ -180,18 +181,37 @@ export default function WishlistModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40"
+        style={{ backdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-hidden bg-white rounded-xl shadow-2xl animate-slideUp">
+      <div
+        className="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl animate-slideUp bg-white"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-amber-50">
-          <h2 className="text-lg font-bold text-gray-900">
+        <div
+          className="flex items-center justify-between p-5"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 143, 171, 0.08))',
+            borderBottom: '1px solid rgba(255, 107, 107, 0.15)',
+          }}
+        >
+          <h2
+            className="text-xl font-bold"
+            style={{
+              fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+              color: '#ff6b6b',
+            }}
+          >
             {isEditMode ? 'Edit Wishlist Item' : 'Add to Wishlist'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-amber-100 text-gray-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-[#ff6b6b]/10 transition-colors"
+            style={{ color: '#ff6b6b' }}
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -327,25 +347,18 @@ export default function WishlistModal({
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Address / Location
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                  placeholder="Where is it?"
-                />
-                {formData.address && (
-                  <a
-                    href={getMapsUrl(formData.address)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                  >
-                    <MapPinIcon className="w-4 h-4" />
-                  </a>
-                )}
-              </div>
+              <AddressAutocomplete
+                value={formData.address}
+                onChange={(address) => setFormData({ ...formData, address })}
+                placeholder="Search for a place..."
+                className="border-gray-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                onMapsClick={() => {
+                  if (formData.address) {
+                    window.open(getMapsUrl(formData.address), '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                showMapsButton={!!formData.address}
+              />
             </div>
 
             {/* Notes */}
@@ -378,13 +391,17 @@ export default function WishlistModal({
           </div>
 
           {/* Actions */}
-          <div className="sticky bottom-0 flex items-center justify-between p-4 bg-gray-50 border-t border-gray-200">
+          <div
+            className="sticky bottom-0 flex items-center justify-between p-5 bg-white"
+            style={{ borderTop: '1px solid rgba(255, 107, 107, 0.15)' }}
+          >
             {isEditMode && onDelete ? (
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2.5 text-[#ff6b6b] hover:bg-[#ff6b6b]/10 rounded-xl transition-colors disabled:opacity-50 font-semibold"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
               >
                 <TrashIcon className="w-4 h-4" />
                 {deleting ? 'Removing...' : 'Remove'}
@@ -392,18 +409,23 @@ export default function WishlistModal({
             ) : (
               <div />
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold transition-colors"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 rounded-lg font-semibold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                style={{
+                  background: '#ff6b6b',
+                  fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+                }}
               >
                 {saving ? 'Saving...' : isEditMode ? 'Update' : 'Add to Wishlist'}
               </button>

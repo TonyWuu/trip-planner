@@ -5,7 +5,7 @@ import { Activity, Category } from '@/lib/types';
 import { formatTimeRange, getActivitySpan } from '@/lib/utils';
 import { XMarkIcon, getCategoryIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
-import { setDraggedItemSpan, getDraggedItemSpan } from './DayColumn';
+import { setDraggedItemSpan, getDraggedItemSpan, setDraggedItemColor, setDraggedItemYOffset } from './DayColumn';
 
 interface ActivityCellProps {
   activity: Activity;
@@ -21,20 +21,29 @@ interface ActivityCellProps {
   isContinuation?: boolean;
 }
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  '#3B82F6': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
-  '#22C55E': { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200' },
-  '#F97316': { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-200' },
-  '#A855F7': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
-  '#6B7280': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' },
-  '#EC4899': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' },
-  '#14B8A6': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-200' },
-  '#F59E0B': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200' },
-  '#EF4444': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
+// Playful candy colors for categories
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; gradient: string }> = {
+  '#3B82F6': { bg: 'bg-[#4d96ff]/15', text: 'text-[#2563eb]', border: 'border-[#4d96ff]/30', gradient: 'linear-gradient(135deg, #4d96ff, #6bb3ff)' },
+  '#22C55E': { bg: 'bg-[#6bcb77]/15', text: 'text-[#15803d]', border: 'border-[#6bcb77]/30', gradient: 'linear-gradient(135deg, #6bcb77, #8ce99a)' },
+  '#F97316': { bg: 'bg-[#ffa07a]/15', text: 'text-[#c2410c]', border: 'border-[#ffa07a]/30', gradient: 'linear-gradient(135deg, #ff6b6b, #ffa07a)' },
+  '#A855F7': { bg: 'bg-[#b088f9]/15', text: 'text-[#7c3aed]', border: 'border-[#b088f9]/30', gradient: 'linear-gradient(135deg, #b088f9, #c9a8ff)' },
+  '#6B7280': { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200', gradient: 'linear-gradient(135deg, #6b7280, #9ca3af)' },
+  '#EC4899': { bg: 'bg-[#ff8fab]/15', text: 'text-[#be185d]', border: 'border-[#ff8fab]/30', gradient: 'linear-gradient(135deg, #ff8fab, #ffc0cb)' },
+  '#14B8A6': { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', gradient: 'linear-gradient(135deg, #14b8a6, #5eead4)' },
+  '#F59E0B': { bg: 'bg-[#ffd93d]/15', text: 'text-[#b45309]', border: 'border-[#ffd93d]/30', gradient: 'linear-gradient(135deg, #ffd93d, #ffe066)' },
+  '#EF4444': { bg: 'bg-[#ff6b6b]/15', text: 'text-[#dc2626]', border: 'border-[#ff6b6b]/30', gradient: 'linear-gradient(135deg, #ff6b6b, #ff8fab)' },
 };
 
-function getCategoryStyle(color: string): { bg: string; text: string; border: string } {
-  return CATEGORY_COLORS[color] || { bg: 'bg-violet-100', text: 'text-violet-800', border: 'border-violet-200' };
+function getCategoryStyle(color: string): { bg: string; text: string; border: string; gradient: string } {
+  return CATEGORY_COLORS[color] || { bg: 'bg-[#b088f9]/15', text: 'text-[#7c3aed]', border: 'border-[#b088f9]/30', gradient: 'linear-gradient(135deg, #b088f9, #c9a8ff)' };
+}
+
+function formatTime(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const period = hours >= 12 ? 'pm' : 'am';
+  const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+  return `${displayHour}:${minutes.toString().padStart(2, '0')}${period}`;
 }
 
 export default function ActivityCell({ activity, categories, onClick, onDelete, onDragStart, onResize, column = 0, totalColumns = 1, isAnyDragActive = false, daySpan, isContinuation = false }: ActivityCellProps) {
@@ -222,6 +231,10 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     const dragEl = e.currentTarget as HTMLElement;
     const rect = dragEl.getBoundingClientRect();
 
+    // Calculate Y offset from mouse to top of activity
+    const yOffset = e.clientY - rect.top;
+    setDraggedItemYOffset(yOffset);
+
     // Create a polished drag ghost
     const ghost = dragEl.cloneNode(true) as HTMLElement;
     ghost.style.width = `${rect.width}px`;
@@ -236,11 +249,12 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     ghost.style.pointerEvents = 'none';
     document.body.appendChild(ghost);
 
-    e.dataTransfer.setDragImage(ghost, rect.width / 2, 20);
+    e.dataTransfer.setDragImage(ghost, rect.width / 2, yOffset);
     e.dataTransfer.effectAllowed = 'move';
 
-    // Set the dragged item span for highlighting
+    // Set the dragged item span and color for highlighting
     setDraggedItemSpan(span);
+    setDraggedItemColor(bgColor);
 
     // Clean up ghost after a short delay
     setTimeout(() => {
@@ -258,8 +272,10 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
   };
 
   const handleDragEnd = () => {
-    // Clear the dragged item span when drag ends
+    // Clear the dragged item info when drag ends
     setDraggedItemSpan(null);
+    setDraggedItemColor(null);
+    setDraggedItemYOffset(0);
     setIsDragging(false);
   };
 
@@ -267,39 +283,50 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
   const widthPercent = 100 / totalColumns;
   const leftPercent = column * widthPercent;
 
+  // Calculate sub-slot offset for 15-min positioning
+  // Each 30-min slot is 40px, so each minute is 40/30 = 1.33px
+  const startDate = new Date(activity.start_datetime);
+  const startMinute = startDate.getMinutes();
+  const minuteWithinSlot = startMinute % 30; // 0-29 minutes within the slot
+  const subSlotOffset = isContinuation ? 0 : (minuteWithinSlot / 30) * 40;
+
   return (
     <div
       draggable={!isResizing}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={isResizing ? undefined : handleClick}
-      className={`absolute rounded-lg overflow-hidden z-10 group transition-all duration-150 ease-out border ${style.bg} ${style.border} ${
+      className={`absolute rounded-lg overflow-hidden z-10 group transition-all duration-150 ${
         isDragging
           ? 'opacity-30 pointer-events-none'
           : isAnyDragActive
           ? 'pointer-events-none'
           : isResizing
-          ? 'cursor-ns-resize z-30 shadow-lg ring-2 ring-purple-400'
-          : 'cursor-grab active:cursor-grabbing active:scale-[0.98] active:opacity-70 hover:scale-[1.01] hover:shadow-md hover:z-20'
+          ? 'cursor-ns-resize z-30 shadow-lg'
+          : 'cursor-grab active:cursor-grabbing active:scale-[0.98] hover:shadow-md hover:z-20'
       }`}
       style={{
         height: `${heightPx - 2}px`,
-        top: `${resizeTopOffset}px`,
+        top: `${subSlotOffset + resizeTopOffset}px`,
         left: `calc(${leftPercent}% + 2px)`,
         width: `calc(${widthPercent}% - 4px)`,
+        background: `${bgColor}15`,
+        border: `1px solid ${bgColor}30`,
+        boxShadow: isResizing ? `0 4px 12px ${bgColor}25` : undefined,
       }}
     >
       <div className="p-1.5 h-full flex flex-col">
         {/* Delete button */}
         <button
           onClick={handleDeleteClick}
-          className={`absolute top-1 right-1 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/50 ${style.text}`}
+          className="absolute top-1 right-1 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/50"
+          style={{ color: bgColor }}
           title="Delete"
         >
           <XMarkIcon className="w-3 h-3" />
         </button>
 
-        <div className={`flex items-center gap-1 pr-4 ${style.text}`}>
+        <div className="flex items-center gap-1 pr-4" style={{ color: bgColor }}>
           <CategoryIcon className="w-3 h-3 flex-shrink-0 opacity-80" />
           <p className="text-xs font-semibold truncate leading-tight">
             {isContinuation ? '↳ ' : ''}{activity.name}
@@ -309,14 +336,32 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
           )}
         </div>
         {(span > 1 || isResizing) && (
-          <p className={`text-[10px] truncate mt-0.5 opacity-75 ${style.text}`}>
+          <p className="text-[10px] truncate mt-0.5 opacity-75" style={{ color: bgColor }}>
             {isResizing
-              ? `${Math.round((heightPx / 40) * 30)} min`
+              ? (() => {
+                  // Calculate new times based on resize
+                  const SLOT_HEIGHT = 40;
+                  const startDate = new Date(activity.start_datetime);
+                  const endDate = new Date(activity.end_datetime);
+
+                  if (resizeTopOffset !== 0) {
+                    // Resizing from top - show new start time
+                    const deltaMinutes = Math.round((resizeTopOffset / SLOT_HEIGHT) * 30 / 15) * 15;
+                    const newStart = new Date(startDate.getTime() + deltaMinutes * 60 * 1000);
+                    return `${formatTime(newStart)} - ${formatTime(endDate)}`;
+                  } else {
+                    // Resizing from bottom - show new end time
+                    const deltaHeight = heightPx - baseHeightPx;
+                    const deltaMinutes = Math.round((deltaHeight / SLOT_HEIGHT) * 30 / 15) * 15;
+                    const newEnd = new Date(endDate.getTime() + deltaMinutes * 60 * 1000);
+                    return `${formatTime(startDate)} - ${formatTime(newEnd)}`;
+                  }
+                })()
               : formatTimeRange(activity.start_datetime, activity.end_datetime)}
           </p>
         )}
         {span > 2 && activity.address && !isResizing && (
-          <p className={`text-[10px] truncate mt-0.5 opacity-60 ${style.text}`}>
+          <p className="text-[10px] truncate mt-0.5 opacity-60" style={{ color: bgColor }}>
             {activity.address}
           </p>
         )}
@@ -326,9 +371,10 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       {onResize && (
         <div
           onMouseDown={handleTopResizeStart}
-          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+          className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-t-lg"
+          style={{ background: `linear-gradient(to bottom, ${bgColor}40, transparent)` }}
         >
-          <div className={`w-8 h-1 rounded-full opacity-50`} style={{ backgroundColor: bgColor }} />
+          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: bgColor }} />
         </div>
       )}
 
@@ -336,9 +382,10 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
       {onResize && (
         <div
           onMouseDown={handleBottomResizeStart}
-          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+          className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-b-lg"
+          style={{ background: `linear-gradient(to top, ${bgColor}40, transparent)` }}
         >
-          <div className={`w-8 h-1 rounded-full opacity-50`} style={{ backgroundColor: bgColor }} />
+          <div className="w-10 h-1 rounded-full" style={{ backgroundColor: bgColor }} />
         </div>
       )}
 

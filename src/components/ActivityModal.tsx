@@ -5,8 +5,9 @@ import { Activity, ActivityFormData, Category, ModalMode } from '@/lib/types';
 import { CURRENCIES } from '@/lib/constants';
 import { getMapsUrl } from '@/lib/utils';
 import { createCategory, deleteCategory } from '@/lib/supabase';
-import { XMarkIcon, TrashIcon, MapPinIcon, PlusIcon, getCategoryIcon, LinkIcon } from './Icons';
+import { XMarkIcon, TrashIcon, PlusIcon, getCategoryIcon, LinkIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
+import AddressAutocomplete from './AddressAutocomplete';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -259,23 +260,45 @@ export default function ActivityModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Backdrop - playful with subtle pattern */}
       <div
-        className="absolute inset-0 bg-purple-900/20 backdrop-blur-sm"
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(circle at 30% 30%, rgba(255, 107, 107, 0.15), transparent 50%), radial-gradient(circle at 70% 70%, rgba(77, 150, 255, 0.15), transparent 50%), rgba(0, 0, 0, 0.3)',
+          backdropFilter: 'blur(8px)',
+        }}
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl animate-slideUp border border-purple-100">
+      <div
+        className="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl animate-slideUp"
+        style={{
+          background: '#ffffff',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-purple-100" style={{ backgroundColor: '#f3e8ff' }}>
-          <h2 className="text-lg font-bold" style={{ color: '#7c3aed' }}>
+        <div
+          className="flex items-center justify-between p-5"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 143, 171, 0.08))',
+            borderBottom: '1px solid rgba(255, 107, 107, 0.15)',
+          }}
+        >
+          <h2
+            className="text-xl font-bold"
+            style={{
+              fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+              color: '#ff6b6b',
+            }}
+          >
             {mode === 'create' ? 'New Activity' : 'Edit Activity'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-purple-200/50 transition-colors"
-            style={{ color: '#7c3aed' }}
+            className="p-2 rounded-lg hover:bg-[#ff6b6b]/10 transition-colors"
+            style={{ color: '#ff6b6b' }}
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -286,7 +309,10 @@ export default function ActivityModal({
           <div className="p-5 space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label
+                className="block text-sm font-semibold text-gray-600 mb-2"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+              >
                 Activity Name *
               </label>
               <input
@@ -294,34 +320,45 @@ export default function ActivityModal({
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all"
+                className="w-full px-4 py-3.5 rounded-xl text-gray-700 placeholder:text-gray-400 transition-all duration-200 font-medium"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                  border: '2px solid rgba(255, 107, 107, 0.2)',
+                }}
                 placeholder="e.g., Dim Sum at Tim Ho Wan"
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label
+                className="block text-sm font-semibold text-gray-600 mb-2"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+              >
                 Category *
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {categories.map((cat) => {
                   const CategoryIcon = getCategoryIcon(cat.name);
+                  const isSelected = formData.category === cat.name;
                   return (
                   <div key={cat.id} className="relative group">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, category: cat.name })}
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
-                        formData.category === cat.name
-                          ? 'text-white shadow-lg scale-105'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                        isSelected
+                          ? 'text-white shadow-md'
+                          : 'text-gray-600 hover:opacity-80'
                       }`}
-                      style={
-                        formData.category === cat.name
-                          ? { backgroundColor: cat.color }
-                          : undefined
-                      }
+                      style={{
+                        background: isSelected
+                          ? `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)`
+                          : `linear-gradient(145deg, ${cat.color}15, ${cat.color}25)`,
+                        border: `2px solid ${isSelected ? 'transparent' : cat.color + '40'}`,
+                        boxShadow: isSelected ? `0 4px 12px ${cat.color}40` : 'none',
+                        fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+                      }}
                     >
                       <CategoryIcon className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">{cat.name}</span>
@@ -329,7 +366,7 @@ export default function ActivityModal({
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCategory(e, cat)}
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs hover:bg-red-600"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#ff6b6b] text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-xs font-bold hover:scale-110 shadow-md"
                       title={`Delete ${cat.name}`}
                     >
                       ×
@@ -340,10 +377,10 @@ export default function ActivityModal({
                 <button
                   type="button"
                   onClick={() => setShowNewCategory(!showNewCategory)}
-                  className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border-2 border-dashed ${
+                  className={`px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border-2 border-dashed ${
                     showNewCategory
-                      ? 'border-purple-400 bg-purple-50 text-purple-600'
-                      : 'border-gray-300 text-gray-500 hover:border-purple-300 hover:text-purple-500'
+                      ? 'border-[#ff6b6b] bg-[#ff6b6b]/10 text-[#ff6b6b] rotate-0'
+                      : 'border-gray-300 text-gray-400 hover:border-[#ff6b6b] hover:text-[#ff6b6b] hover:bg-[#ff6b6b]/5'
                   }`}
                 >
                   <PlusIcon className="w-4 h-4 mx-auto" />
@@ -352,26 +389,36 @@ export default function ActivityModal({
 
               {/* New Category Form */}
               {showNewCategory && (
-                <div className="mt-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
+                <div
+                  className="mt-3 p-4 rounded-xl"
+                  style={{
+                    background: 'rgba(255, 107, 107, 0.05)',
+                    border: '1px solid rgba(255, 107, 107, 0.2)',
+                  }}
+                >
                   <input
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Category name"
-                    className="w-full px-3 py-2 border border-purple-200 rounded-lg bg-white text-gray-700 placeholder:text-gray-400 focus:border-purple-400 text-sm"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white text-gray-700 placeholder:text-gray-400 text-sm font-medium"
+                    style={{ border: '2px solid rgba(255, 107, 107, 0.2)' }}
                   />
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-gray-500">Color:</span>
-                    <div className="flex gap-1">
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-xs text-gray-500 font-medium">Color:</span>
+                    <div className="flex gap-1.5">
                       {CATEGORY_COLORS.map((color) => (
                         <button
                           key={color}
                           type="button"
                           onClick={() => setNewCategoryColor(color)}
-                          className={`w-6 h-6 rounded-full transition-all ${
-                            newCategoryColor === color ? 'ring-2 ring-offset-1 ring-purple-400 scale-110' : ''
+                          className={`w-7 h-7 rounded-full transition-all duration-200 ${
+                            newCategoryColor === color ? 'scale-125 shadow-lg' : 'hover:scale-110'
                           }`}
-                          style={{ backgroundColor: color }}
+                          style={{
+                            background: `linear-gradient(135deg, ${color}, ${color}cc)`,
+                            boxShadow: newCategoryColor === color ? `0 4px 12px ${color}50` : 'none',
+                          }}
                         />
                       ))}
                     </div>
@@ -380,7 +427,11 @@ export default function ActivityModal({
                     type="button"
                     onClick={handleCreateCategory}
                     disabled={!newCategoryName.trim()}
-                    className="mt-2 w-full px-3 py-1.5 bg-purple-500 text-white text-sm font-medium rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-3 w-full px-3 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                    style={{
+                      background: '#ff6b6b',
+                      fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+                    }}
                   >
                     Add Category
                   </button>
@@ -391,7 +442,10 @@ export default function ActivityModal({
             {/* Date & Time */}
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
+                <label
+                  className="block text-sm font-semibold text-gray-600 mb-2"
+                  style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                >
                   Date *
                 </label>
                 <input
@@ -408,12 +462,19 @@ export default function ActivityModal({
                       end_datetime: `${date}T${endTime}`,
                     });
                   }}
-                  className="w-full px-3 py-2.5 border border-purple-200 rounded-xl bg-white text-gray-700 focus:border-purple-400 transition-all"
+                  className="w-full px-4 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200"
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                    border: '2px solid rgba(255, 107, 107, 0.2)',
+                  }}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-2">
+                  <label
+                    className="block text-sm font-semibold text-gray-600 mb-2"
+                    style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                  >
                     Start *
                   </label>
                   <input
@@ -424,11 +485,18 @@ export default function ActivityModal({
                       const date = formData.start_datetime.split('T')[0] || '';
                       setFormData({ ...formData, start_datetime: `${date}T${e.target.value}` });
                     }}
-                    className="w-full px-3 py-2.5 border border-purple-200 rounded-xl bg-white text-gray-700 focus:border-purple-400 transition-all"
+                    className="w-full px-4 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                      border: '2px solid rgba(255, 107, 107, 0.2)',
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-2">
+                  <label
+                    className="block text-sm font-semibold text-gray-600 mb-2"
+                    style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                  >
                     End *
                   </label>
                   <input
@@ -439,7 +507,11 @@ export default function ActivityModal({
                       const date = formData.end_datetime.split('T')[0] || '';
                       setFormData({ ...formData, end_datetime: `${date}T${e.target.value}` });
                     }}
-                    className="w-full px-3 py-2.5 border border-purple-200 rounded-xl bg-white text-gray-700 focus:border-purple-400 transition-all"
+                    className="w-full px-4 py-3 rounded-xl text-gray-700 font-medium transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                      border: '2px solid rgba(255, 107, 107, 0.2)',
+                    }}
                   />
                 </div>
               </div>
@@ -447,47 +519,52 @@ export default function ActivityModal({
 
             {/* Address */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label
+                className="block text-sm font-semibold text-gray-600 mb-2"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+              >
                 Address
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 pr-12 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all"
-                  placeholder="123 Example Street"
-                />
-                {formData.address && (
-                  <a
-                    href={getMapsUrl(formData.address)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-purple-500 hover:text-purple-600 hover:bg-purple-100 transition-colors"
-                  >
-                    <MapPinIcon className="w-5 h-5" />
-                  </a>
-                )}
-              </div>
+              <AddressAutocomplete
+                value={formData.address}
+                onChange={(address) => setFormData({ ...formData, address })}
+                placeholder="Search for a place or address..."
+                onMapsClick={() => {
+                  if (formData.address) {
+                    window.open(getMapsUrl(formData.address), '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                showMapsButton={!!formData.address}
+              />
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label
+                className="block text-sm font-semibold text-gray-600 mb-2"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+              >
                 Notes
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-3 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all resize-none"
+                className="w-full px-4 py-3 rounded-xl text-gray-700 placeholder:text-gray-400 transition-all resize-none font-medium"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                  border: '2px solid rgba(255, 107, 107, 0.2)',
+                }}
                 placeholder="Additional notes..."
               />
             </div>
 
             {/* Cost */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label
+                className="block text-sm font-semibold text-gray-600 mb-2"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+              >
                 Cost
               </label>
               <div className="flex gap-3">
@@ -496,13 +573,21 @@ export default function ActivityModal({
                   step="0.01"
                   value={formData.cost_amount}
                   onChange={(e) => setFormData({ ...formData, cost_amount: e.target.value })}
-                  className="flex-1 px-4 py-3 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all"
+                  className="flex-1 px-4 py-3 rounded-xl text-gray-700 placeholder:text-gray-400 transition-all font-medium"
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                    border: '2px solid rgba(255, 107, 107, 0.2)',
+                  }}
                   placeholder="0.00"
                 />
                 <select
                   value={formData.cost_currency}
                   onChange={(e) => setFormData({ ...formData, cost_currency: e.target.value })}
-                  className="w-24 px-3 py-3 border border-purple-200 rounded-xl bg-white text-gray-700 focus:border-purple-400 transition-all"
+                  className="w-24 px-3 py-3 rounded-xl text-gray-700 transition-all font-medium"
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.05), rgba(255, 217, 61, 0.05))',
+                    border: '2px solid rgba(255, 107, 107, 0.2)',
+                  }}
                 >
                   {CURRENCIES.map((currency) => (
                     <option key={currency} value={currency}>
@@ -515,7 +600,10 @@ export default function ActivityModal({
 
             {/* Links */}
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label
+                className="block text-sm font-semibold text-gray-600 mb-2"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+              >
                 Links
               </label>
 
@@ -525,14 +613,19 @@ export default function ActivityModal({
                   {getLinksArray().map((link, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 px-3 py-2 bg-purple-50 rounded-lg border border-purple-100 group"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl group"
+                      style={{
+                        background: 'linear-gradient(145deg, rgba(255, 107, 107, 0.08), rgba(255, 217, 61, 0.08))',
+                        border: '2px solid rgba(255, 107, 107, 0.15)',
+                      }}
                     >
-                      <LinkIcon className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                      <LinkIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#ff6b6b' }} />
                       <a
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 text-sm text-purple-600 hover:text-purple-800 hover:underline truncate"
+                        className="flex-1 text-sm font-medium hover:underline truncate"
+                        style={{ color: '#ff6b6b' }}
                         title={link}
                       >
                         {getLinkDisplayName(link)}
@@ -540,7 +633,8 @@ export default function ActivityModal({
                       <button
                         type="button"
                         onClick={() => handleRemoveLink(link)}
-                        className="p-1 rounded hover:bg-purple-200 text-purple-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-[#ff6b6b]/20"
+                        style={{ color: '#ff6b6b' }}
                         title="Remove link"
                       >
                         <XMarkIcon className="w-4 h-4" />
@@ -562,14 +656,21 @@ export default function ActivityModal({
                       handleAddLink();
                     }
                   }}
-                  className="flex-1 px-4 py-2.5 border border-purple-200 rounded-xl bg-purple-50/30 text-gray-700 placeholder:text-gray-400 focus:border-purple-400 transition-all"
+                  className="flex-1 px-4 py-3 rounded-xl text-gray-700 placeholder:text-gray-400 transition-colors font-medium"
+                  style={{
+                    background: 'rgba(255, 107, 107, 0.05)',
+                    border: '2px solid rgba(255, 107, 107, 0.2)',
+                  }}
                   placeholder="https://example.com"
                 />
                 <button
                   type="button"
                   onClick={handleAddLink}
                   disabled={!newLinkInput.trim()}
-                  className="px-3 py-2.5 rounded-xl bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-4 py-3 rounded-xl text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+                  style={{
+                    background: '#ff6b6b',
+                  }}
                   title="Add link"
                 >
                   <PlusIcon className="w-5 h-5" />
@@ -579,13 +680,19 @@ export default function ActivityModal({
           </div>
 
           {/* Actions */}
-          <div className="sticky bottom-0 flex items-center justify-between p-5 bg-purple-50/80 backdrop-blur-sm border-t border-purple-100">
+          <div
+            className="sticky bottom-0 flex items-center justify-between p-5 bg-white"
+            style={{
+              borderTop: '1px solid rgba(255, 107, 107, 0.15)',
+            }}
+          >
             {mode === 'edit' ? (
               <button
                 type="button"
                 onClick={handleDeleteClick}
                 disabled={deleting}
-                className="flex items-center gap-2 px-4 py-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2.5 text-[#ff6b6b] hover:bg-[#ff6b6b]/10 rounded-xl transition-colors disabled:opacity-50 font-semibold"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
               >
                 <TrashIcon className="w-4 h-4" />
                 {deleting ? 'Deleting...' : 'Delete'}
@@ -597,15 +704,19 @@ export default function ActivityModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition-colors"
+                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold transition-colors"
+                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-5 py-2.5 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
-                style={{ backgroundColor: '#c4b5fd', color: '#6b21a8' }}
+                className="px-6 py-2.5 rounded-xl font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                style={{
+                  background: '#ff6b6b',
+                  fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+                }}
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>

@@ -15,6 +15,7 @@ import MobileDayPicker from './MobileDayPicker';
 import ActivityModal from './ActivityModal';
 import FixedItemModal from './FixedItemModal';
 import WishlistSidebar from './WishlistSidebar';
+import MapView from './MapView';
 
 interface TripGridProps {
   trip: Trip;
@@ -38,6 +39,7 @@ export default function TripGrid({ trip }: TripGridProps) {
   const [fixedItemModalOpen, setFixedItemModalOpen] = useState(false);
   const [selectedFixedItem, setSelectedFixedItem] = useState<FixedItem | null>(null);
   const [wishlistOpen, setWishlistOpen] = useState(true);
+  const [viewMode, setViewMode] = useState<'calendar' | 'map'>('calendar');
   const gridContainerRef = useRef<HTMLDivElement>(null);
 
   const { activities, createActivity, updateActivity, deleteActivity } = useActivities(trip.id);
@@ -81,20 +83,23 @@ export default function TripGrid({ trip }: TripGridProps) {
   }, [weekStart]);
 
   const allDays = getDaysInRange(trip.start_date, trip.end_date);
-  const weekDays = getWeekDays(weekStart, trip.start_date, trip.end_date);
+
+  // Show fewer days when wishlist is open to fit both side by side
+  const daysToShow = wishlistOpen ? 5 : 7;
+  const weekDays = getWeekDays(weekStart, trip.start_date, trip.end_date, daysToShow);
 
   const canGoPrev = isAfter(weekStart, tripStart) || startOfDay(weekStart).getTime() !== startOfDay(tripStart).getTime();
-  const nextWeekStart = addDays(weekStart, 7);
+  const nextWeekStart = addDays(weekStart, daysToShow);
   const canGoNext = isBefore(nextWeekStart, tripEnd);
 
   const handlePrevWeek = useCallback(() => {
-    const newStart = addDays(weekStart, -7);
+    const newStart = addDays(weekStart, -daysToShow);
     if (isBefore(newStart, tripStart)) {
       setWeekStart(startOfDay(tripStart));
     } else {
       setWeekStart(newStart);
     }
-  }, [weekStart, tripStart]);
+  }, [weekStart, tripStart, daysToShow]);
 
   const handleNextWeek = useCallback(() => {
     if (canGoNext) {
@@ -289,38 +294,58 @@ export default function TripGrid({ trip }: TripGridProps) {
   const displayDays = isMobile ? [allDays[mobileDayIndex]].filter(Boolean) : weekDays;
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-yellow-50">
-      {/* Header with integrated week navigation */}
-      <header className="bg-white/70 backdrop-blur-md px-4 py-3 shadow-sm">
+    <div className="flex flex-col h-screen bg-[#fffbf5]">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm px-4 py-1.5 border-b border-gray-100">
         <div className="flex items-center justify-between">
           {/* Left: Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#ff6b6b] to-[#ff8fab] flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-800">
-                {trip.name}
-              </h1>
-              <div className="hidden md:flex items-center gap-1 text-[10px]">
-                <span className="text-rose-500 font-medium">HK</span>
-                <span className="text-slate-300">→</span>
-                <span className="text-blue-500 font-medium">Shanghai</span>
-                <span className="text-slate-300">→</span>
-                <span className="text-emerald-500 font-medium">Chengdu</span>
-              </div>
+            <h1 className="text-sm font-semibold text-gray-800">
+              {trip.name}
+            </h1>
+            <div className="hidden md:flex items-center gap-1 text-[10px] ml-2">
+              <span className="text-[#ff6b6b] font-medium">HK</span>
+              <span className="text-gray-300">→</span>
+              <span className="text-[#4d96ff] font-medium">Shanghai</span>
+              <span className="text-gray-300">→</span>
+              <span className="text-[#6bcb77] font-medium">Chengdu</span>
             </div>
           </div>
 
-          {/* Center: Week date range display */}
-          <div className="hidden md:block px-3 py-1 rounded-lg bg-amber-100/80 text-amber-800 text-xs font-medium">
-            {format(weekStart, 'MMM d')} – {format(addDays(weekStart, 6), 'MMM d, yyyy')}
+          {/* Right: View Toggle */}
+          <div className="hidden md:flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                viewMode === 'calendar'
+                  ? 'bg-white text-[#ff6b6b] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Calendar
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                viewMode === 'map'
+                  ? 'bg-white text-[#4d96ff] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              Map
+            </button>
           </div>
-
-          {/* Right: Empty for balance */}
-          <div className="w-10 md:w-32" />
         </div>
       </header>
 
@@ -331,58 +356,108 @@ export default function TripGrid({ trip }: TripGridProps) {
         onDayChange={setMobileDayIndex}
       />
 
-      {/* Fixed Items Bar */}
-      <div className="hidden md:block">
-        <FixedItemsBar
-          flights={flights}
-          hotels={hotels}
-          weekDays={weekDays}
-          weekStart={weekStart}
-          onItemClick={handleFixedItemClick}
-        />
-      </div>
-
       {/* Main content area with sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Grid Container */}
-        <div ref={gridContainerRef} className="flex-1 overflow-auto px-4 pb-4">
-          <div className="flex min-w-fit">
-            <TimeColumn
-              onPrevWeek={handlePrevWeek}
-              canGoPrev={canGoPrev && startOfDay(weekStart).getTime() !== startOfDay(tripStart).getTime()}
-            />
-            {displayDays.map((day) => (
-              <DayColumn
-                key={day.dateStr}
-                day={day}
-                activities={activities}
+        {viewMode === 'calendar' ? (
+          /* Calendar View */
+          <div ref={gridContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-4">
+            {/* Unified sticky header - FixedItemsBar + Date headers */}
+            <div className="hidden md:block sticky top-0 z-40 bg-[#fffbf5] px-4 pt-2 shadow-sm">
+              <FixedItemsBar
                 flights={flights}
-                categories={categories}
-                onCellClick={handleCellClick}
-                onActivityClick={handleActivityClick}
-                onActivityDelete={handleDelete}
-                onActivityDrop={handleDrop}
-                onActivityResize={handleActivityResize}
-                onFlightClick={handleFixedItemClick}
+                hotels={hotels}
+                weekDays={weekDays}
+                weekStart={weekStart}
+                onItemClick={handleFixedItemClick}
               />
-            ))}
-            {/* Right navigation column */}
-            <div className="flex-shrink-0 w-10">
-              <div className="h-14 flex items-center justify-center mb-2 sticky top-0 z-20 bg-gradient-to-l from-amber-50 to-amber-50/80 backdrop-blur-sm">
-                <button
-                  onClick={handleNextWeek}
-                  disabled={!canGoNext}
-                  className="p-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Next week"
-                >
-                  <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+              {/* Date headers row */}
+              <div className="flex pb-2">
+                {/* Left spacer for time column */}
+                <div className="flex-shrink-0 w-[68px] flex items-center justify-center">
+                  <button
+                    onClick={handlePrevWeek}
+                    disabled={!canGoPrev || startOfDay(weekStart).getTime() === startOfDay(tripStart).getTime()}
+                    className="p-1.5 rounded-lg hover:bg-[#ff6b6b]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous week"
+                  >
+                    <svg className="w-5 h-5 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                </div>
+                {/* Day headers */}
+                {displayDays.map((day) => {
+                  const isToday = day.dateStr === new Date().toISOString().split('T')[0];
+                  return (
+                    <div
+                      key={day.dateStr}
+                      className={`flex-1 min-w-0 flex flex-col items-center justify-center h-14 mx-1 rounded-xl ${
+                        isToday
+                          ? 'bg-gradient-to-br from-[#ff6b6b] to-[#ff8fab] text-white shadow-md'
+                          : 'bg-white shadow-sm'
+                      }`}
+                    >
+                      <span className={`text-lg font-bold ${isToday ? 'text-white' : 'text-gray-800'}`}>
+                        {format(day.date, 'MMM d')}
+                      </span>
+                      <span className={`text-xs ${isToday ? 'text-white/80' : 'text-gray-400'}`}>
+                        {day.dayOfWeek}
+                      </span>
+                    </div>
+                  );
+                })}
+                {/* Right nav */}
+                <div className="flex-shrink-0 w-10 flex items-center justify-center">
+                  <button
+                    onClick={handleNextWeek}
+                    disabled={!canGoNext}
+                    className="p-1.5 rounded-lg hover:bg-[#ff6b6b]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next week"
+                  >
+                    <svg className="w-5 h-5 text-[#ff6b6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
+            {/* Calendar grid - just time slots */}
+            <div className="flex px-4">
+              <TimeColumn showHeader={false} />
+              {displayDays.map((day) => (
+                <DayColumn
+                  key={day.dateStr}
+                  day={day}
+                  activities={activities}
+                  flights={flights}
+                  categories={categories}
+                  onCellClick={handleCellClick}
+                  onActivityClick={handleActivityClick}
+                  onActivityDelete={handleDelete}
+                  onActivityDrop={handleDrop}
+                  onActivityResize={handleActivityResize}
+                  onFlightClick={handleFixedItemClick}
+                  showHeader={false}
+                />
+              ))}
+              {/* Right spacer */}
+              <div className="flex-shrink-0 w-10" />
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Map View */
+          <div className="flex-1 overflow-hidden">
+            <MapView
+              activities={activities}
+              flights={flights}
+              hotels={hotels}
+              categories={categories}
+              days={allDays}
+              onActivityClick={handleActivityClick}
+              onHotelClick={handleFixedItemClick}
+            />
+          </div>
+        )}
 
         {/* Wishlist Sidebar */}
         <WishlistSidebar

@@ -51,16 +51,19 @@ export default function ConfirmModal({
 
   const variantStyles = {
     danger: {
-      icon: 'bg-red-100 text-red-600',
-      button: 'bg-red-500 hover:bg-red-600 text-white',
+      bg: '#ff6b6b',
+      bgLight: 'rgba(255, 107, 107, 0.1)',
+      color: '#ff6b6b',
     },
     warning: {
-      icon: 'bg-amber-100 text-amber-600',
-      button: 'bg-amber-500 hover:bg-amber-600 text-white',
+      bg: '#f59e0b',
+      bgLight: 'rgba(245, 158, 11, 0.1)',
+      color: '#f59e0b',
     },
     info: {
-      icon: 'bg-blue-100 text-blue-600',
-      button: 'bg-blue-500 hover:bg-blue-600 text-white',
+      bg: '#4d96ff',
+      bgLight: 'rgba(77, 150, 255, 0.1)',
+      color: '#4d96ff',
     },
   };
 
@@ -70,42 +73,41 @@ export default function ConfirmModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40"
+        style={{ backdropFilter: 'blur(4px)' }}
         onClick={onCancel}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl animate-slideUp overflow-hidden">
+      <div
+        className="relative w-full max-w-sm rounded-2xl shadow-2xl animate-slideUp overflow-hidden bg-white"
+      >
         {/* Close button */}
         <button
           onClick={onCancel}
-          className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors z-10"
+          className="absolute top-4 right-4 p-2 rounded-lg transition-colors hover:bg-gray-100 z-10"
+          style={{ color: styles.color }}
         >
-          <XMarkIcon className="w-5 h-5" />
+          <XMarkIcon className="w-4 h-4" />
         </button>
 
         <div className="p-6 pt-8 text-center">
           {/* Icon */}
-          <div className={`w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center ${styles.icon}`}>
-            {variant === 'danger' && (
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            )}
-            {variant === 'warning' && (
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            )}
-            {variant === 'info' && (
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
+          <div
+            className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center"
+            style={{ background: styles.bgLight }}
+          >
+            <XMarkIcon className="w-7 h-7" style={{ color: styles.color }} />
           </div>
 
           {/* Title */}
-          <h3 className="text-lg font-bold text-gray-900 mb-2">
+          <h3
+            className="text-lg font-bold mb-2"
+            style={{
+              fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+              color: styles.color,
+            }}
+          >
             {title}
           </h3>
 
@@ -118,13 +120,18 @@ export default function ConfirmModal({
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-gray-600 transition-colors bg-gray-100 hover:bg-gray-200"
+              style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
             >
               {cancelLabel}
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition-colors ${styles.button}`}
+              className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-white transition-colors hover:opacity-90"
+              style={{
+                background: styles.bg,
+                fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
+              }}
             >
               {confirmLabel}
             </button>

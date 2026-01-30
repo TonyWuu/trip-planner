@@ -38,12 +38,12 @@ export function getDaysInRange(startDate: string, endDate: string): DayInfo[] {
   return days;
 }
 
-export function getWeekDays(weekStart: Date, tripStart: string, tripEnd: string): DayInfo[] {
+export function getWeekDays(weekStart: Date, tripStart: string, tripEnd: string, numDays: number = 7): DayInfo[] {
   const days: DayInfo[] = [];
   const tripStartDate = parseISO(tripStart);
   const tripEndDate = parseISO(tripEnd);
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < numDays; i++) {
     const current = addDays(weekStart, i);
     if (current >= tripStartDate && current <= tripEndDate) {
       const dateStr = format(current, 'yyyy-MM-dd');

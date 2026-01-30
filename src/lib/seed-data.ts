@@ -4,8 +4,8 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   {
     type: 'flight',
     name: 'CX 805: YYZ → HKG',
-    start_datetime: '2025-02-20T02:55',
-    end_datetime: '2025-02-20T18:45',
+    start_datetime: '2025-02-20T12:00', // Departs 11:00 PM EST on Feb 19
+    end_datetime: '2025-02-21T04:00',   // Arrives 4:00 AM HKT on Feb 21 (~16h flight)
     details: {
       flight_number: 'CX 805',
       airline: 'Cathay Pacific',
@@ -65,7 +65,7 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
     type: 'flight',
     name: 'CX 828: HKG → YYZ',
     start_datetime: '2025-03-08T10:25',
-    end_datetime: '2025-03-08T14:15',
+    end_datetime: '2025-03-09T02:15', // Arrives 13:15 EST = 02:15 HKT next day
     details: {
       flight_number: 'CX 828',
       airline: 'Cathay Pacific',

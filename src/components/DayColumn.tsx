@@ -21,6 +21,8 @@ import FlightCell from './FlightCell';
 
 // Module-level state for tracking dragged item info across components
 let draggedItemSpan: number | null = null;
+let draggedItemColor: string | null = null;
+let draggedItemYOffset: number = 0; // Y offset from mouse to top of activity
 
 export function setDraggedItemSpan(span: number | null) {
   draggedItemSpan = span;
@@ -28,6 +30,22 @@ export function setDraggedItemSpan(span: number | null) {
 
 export function getDraggedItemSpan(): number | null {
   return draggedItemSpan;
+}
+
+export function setDraggedItemColor(color: string | null) {
+  draggedItemColor = color;
+}
+
+export function getDraggedItemColor(): string | null {
+  return draggedItemColor;
+}
+
+export function setDraggedItemYOffset(offset: number) {
+  draggedItemYOffset = offset;
+}
+
+export function getDraggedItemYOffset(): number {
+  return draggedItemYOffset;
 }
 
 interface DayColumnProps {
@@ -41,42 +59,38 @@ interface DayColumnProps {
   onActivityDrop: (data: Activity | (WishlistItem & { isWishlistItem: true }), newDate: string, newHour: number, newMinute: number) => Promise<void>;
   onActivityResize?: (activityId: string, newEndTime: string, newStartTime?: string) => void;
   onFlightClick?: (flight: FixedItem) => void;
+  showHeader?: boolean;
 }
 
-function getCityStyle(city: string): { bg: string; text: string; label: string } {
+function getCityStyle(city: string): { bg: string; text: string; label: string; color: string } {
   const cityLower = city.toLowerCase();
 
-  // Handle transition days (e.g., "Hong Kong → Shanghai")
   if (cityLower.includes('→')) {
     const parts = city.split('→').map(p => p.trim());
-    const fromCity = parts[0];
-    const toCity = parts[1];
-    // Use gradient colors for transitions
-    return { bg: 'bg-amber-100', text: 'text-amber-700', label: `${fromCity} → ${toCity}` };
+    return { bg: 'bg-amber-100', text: 'text-amber-700', label: `${parts[0]} → ${parts[1]}`, color: '#f59e0b' };
   }
 
   if (cityLower.includes('transit')) {
-    return { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Transit' };
+    return { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Transit', color: '#64748b' };
   }
 
   if (cityLower.includes('hong kong')) {
-    return { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Hong Kong' };
+    return { bg: 'bg-[#ff6b6b]/10', text: 'text-[#ff6b6b]', label: 'Hong Kong', color: '#ff6b6b' };
   }
 
   if (cityLower.includes('shanghai')) {
-    return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Shanghai' };
+    return { bg: 'bg-[#4d96ff]/10', text: 'text-[#4d96ff]', label: 'Shanghai', color: '#4d96ff' };
   }
 
   if (cityLower.includes('chengdu')) {
-    return { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Chengdu' };
+    return { bg: 'bg-[#6bcb77]/10', text: 'text-[#6bcb77]', label: 'Chengdu', color: '#6bcb77' };
   }
 
   if (cityLower.includes('toronto')) {
-    return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Toronto' };
+    return { bg: 'bg-[#b088f9]/10', text: 'text-[#b088f9]', label: 'Toronto', color: '#b088f9' };
   }
 
-  // Default: use full city name
-  return { bg: 'bg-gray-100', text: 'text-gray-700', label: city };
+  return { bg: 'bg-gray-100', text: 'text-gray-700', label: city, color: '#6b7280' };
 }
 
 // Calculate overlap layout for activities
@@ -161,9 +175,12 @@ export default function DayColumn({
   onActivityDrop,
   onActivityResize,
   onFlightClick,
+  showHeader = true,
 }: DayColumnProps) {
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+  const [dragOver15MinOffset, setDragOver15MinOffset] = useState<boolean>(false);
   const [currentDragSpan, setCurrentDragSpan] = useState<number>(1);
+  const [currentDragColor, setCurrentDragColor] = useState<string>('#ff6b6b');
 
   // Filter activities that are visible on this day (including multi-day activities)
   const dayActivities = activities.filter((activity) => {
@@ -212,12 +229,6 @@ export default function DayColumn({
     return results;
   };
 
-  // Check if a slot is within the drag highlight range
-  const isSlotInDragRange = (slotIndex: number): boolean => {
-    if (dragOverSlot === null) return false;
-    const endSlot = dragOverSlot + currentDragSpan - 1;
-    return slotIndex >= dragOverSlot && slotIndex <= endSlot && slotIndex < TIME_SLOTS.length;
-  };
 
   const handleDragStart = (e: React.DragEvent, activity: Activity) => {
     e.dataTransfer.setData('application/json', JSON.stringify(activity));
@@ -233,11 +244,31 @@ export default function DayColumn({
   const handleDragOver = (e: React.DragEvent, slotIndex: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDragOverSlot(slotIndex);
-    // Get the span from the module-level variable
+
+    // Get the Y offset from where user grabbed the activity to its top
+    const yOffset = getDraggedItemYOffset();
+
+    // Calculate position accounting for where user grabbed the activity
+    const rect = e.currentTarget.getBoundingClientRect();
+    const adjustedY = e.clientY - rect.top - yOffset;
+
+    // Calculate which slot the TOP of the activity should land in
+    const slotHeight = 40;
+    const adjustedSlotIndex = Math.max(0, Math.min(TIME_SLOTS.length - 1, slotIndex + Math.floor(adjustedY / slotHeight)));
+    const yWithinSlot = ((adjustedY % slotHeight) + slotHeight) % slotHeight; // Handle negative modulo
+    const add15Min = yWithinSlot >= 20;
+
+    setDragOverSlot(adjustedSlotIndex);
+    setDragOver15MinOffset(add15Min);
+
+    // Get the span and color from the module-level variables
     const span = getDraggedItemSpan();
     if (span !== null) {
       setCurrentDragSpan(span);
+    }
+    const color = getDraggedItemColor();
+    if (color !== null) {
+      setCurrentDragColor(color);
     }
   };
 
@@ -248,20 +279,34 @@ export default function DayColumn({
     const y = e.clientY;
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDragOverSlot(null);
+      setDragOver15MinOffset(false);
     }
   };
 
   const handleDrop = (e: React.DragEvent, slotIndex: number) => {
     e.preventDefault();
+
+    // Capture the current preview position before clearing state
+    const finalSlot = dragOverSlot;
+    const final15MinOffset = dragOver15MinOffset;
+
     setDragOverSlot(null);
+    setDragOver15MinOffset(false);
     setDraggedItemSpan(null);
+    setDraggedItemColor(null);
+    setDraggedItemYOffset(0);
 
     try {
       const jsonData = e.dataTransfer.getData('application/json');
-      if (jsonData) {
+      if (jsonData && finalSlot !== null) {
         const data = JSON.parse(jsonData);
-        const slot = TIME_SLOTS[slotIndex];
-        onActivityDrop(data, day.dateStr, slot.hour, slot.minute);
+        const slot = TIME_SLOTS[finalSlot];
+
+        const dropMinute = slot.minute + (final15MinOffset ? 15 : 0);
+        const dropHour = dropMinute >= 60 ? slot.hour + 1 : slot.hour;
+        const finalMinute = dropMinute % 60;
+
+        onActivityDrop(data, day.dateStr, dropHour, finalMinute);
       }
     } catch (err) {
       console.error('Error parsing dropped item:', err);
@@ -273,49 +318,47 @@ export default function DayColumn({
   const cityStyle = getCityStyle(day.city);
 
   return (
-    <div className="flex-1 min-w-[140px]">
-      {/* Header - sticky at top */}
-      <div className={`hidden md:flex md:flex-col md:items-center md:justify-center h-14 mx-1 mb-2 rounded-xl sticky top-0 z-20 ${
-        isToday
-          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200'
-          : 'bg-white/90 backdrop-blur-sm shadow-sm'
-      }`}>
-        <span className={`text-lg font-bold ${isToday ? 'text-white' : 'text-slate-800'}`}>
-          {formatDateHeader(day.date)}
-        </span>
-        <div className="flex items-center gap-1.5">
-          <span className={`text-xs ${isToday ? 'text-amber-100' : 'text-slate-400'}`}>
-            {day.dayOfWeek}
+    <div className="flex-1 min-w-0">
+      {/* Header - only show if showHeader is true */}
+      {showHeader && (
+        <div
+          className={`hidden md:flex md:flex-col md:items-center md:justify-center h-14 mx-1 mb-2 rounded-xl sticky top-[114px] z-30 ${
+            isToday
+              ? 'bg-gradient-to-br from-[#ff6b6b] to-[#ff8fab] text-white shadow-md'
+              : 'bg-white shadow-sm'
+          }`}
+        >
+          <span className={`text-lg font-bold ${isToday ? 'text-white' : 'text-gray-800'}`}>
+            {formatDateHeader(day.date)}
           </span>
-          {day.city && (
-            <span className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-full ${
-              isToday ? 'bg-white/20 text-white' : `${cityStyle.bg} ${cityStyle.text}`
-            }`}>
-              {cityStyle.label}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-xs ${isToday ? 'text-white/80' : 'text-gray-400'}`}>
+              {day.dayOfWeek}
             </span>
-          )}
+            {day.city && (
+              <span className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-full ${
+                isToday ? 'bg-white/20 text-white' : `${cityStyle.bg} ${cityStyle.text}`
+              }`}>
+                {cityStyle.label}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Time slots */}
-      <div className="mx-1 rounded-2xl bg-white/50 backdrop-blur-sm overflow-hidden relative">
+      <div className="mx-1 rounded-2xl bg-white/60 backdrop-blur-sm overflow-hidden relative">
         {TIME_SLOTS.map((slot, index) => {
           const slotActivities = getActivitiesStartingInSlot(index);
           const slotFlights = getFlightsStartingInSlot(index);
-          const isInDragRange = isSlotInDragRange(index);
-          const isDragStart = dragOverSlot === index;
           const isHourStart = slot.minute === 0;
 
           return (
             <div
               key={index}
-              className={`h-10 relative cursor-pointer transition-all duration-75 ${
-                isHourStart && !isInDragRange ? 'border-t border-slate-200/60' : ''
-              } ${
-                isInDragRange
-                  ? 'bg-amber-100/80'
-                  : 'hover:bg-amber-50/50'
-              }`}
+              className={`h-10 relative cursor-pointer transition-colors ${
+                isHourStart ? 'border-t border-gray-200/60' : ''
+              } hover:bg-[#ff6b6b]/5`}
               onClick={() => onCellClick(day.dateStr, slot.hour, slot.minute)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={handleDragLeave}
@@ -358,10 +401,12 @@ export default function DayColumn({
         {/* Drag preview overlay */}
         {dragOverSlot !== null && (
           <div
-            className="absolute left-1 right-1 rounded-lg border-2 border-dashed border-amber-400 bg-amber-200/50 pointer-events-none z-30 transition-all duration-75"
+            className="absolute left-1 right-1 rounded-lg border-2 border-dashed pointer-events-none z-30"
             style={{
-              top: `${dragOverSlot * 40}px`,
+              top: `${dragOverSlot * 40 + (dragOver15MinOffset ? 20 : 0)}px`,
               height: `${Math.min(currentDragSpan, TIME_SLOTS.length - dragOverSlot) * 40 - 2}px`,
+              borderColor: currentDragColor,
+              backgroundColor: `${currentDragColor}15`,
             }}
           />
         )}

@@ -3,7 +3,7 @@ import { TimeSlot } from './types';
 export const TRIP_TIMEZONE = 'Asia/Hong_Kong';
 
 export const TRIP_START_DATE = '2025-02-19';
-export const TRIP_END_DATE = '2025-03-08';
+export const TRIP_END_DATE = '2025-03-09';
 export const TRIP_NAME = 'Hong Kong & China Trip 2025';
 
 export const DEFAULT_CATEGORIES = [
@@ -33,7 +33,7 @@ export const CITY_SCHEDULE: { start: string; end: string; city: string }[] = [
   { start: '2025-03-04', end: '2025-03-04', city: 'Shanghai → Chengdu' },
   { start: '2025-03-05', end: '2025-03-06', city: 'Chengdu' },
   { start: '2025-03-07', end: '2025-03-07', city: 'Chengdu → Hong Kong' },
-  { start: '2025-03-08', end: '2025-03-08', city: 'Hong Kong → Toronto' },
+  { start: '2025-03-08', end: '2025-03-09', city: 'Hong Kong → Toronto' },
 ];
 
 // Time slots for full 24 hours in 30-minute increments (midnight to 11:30pm)

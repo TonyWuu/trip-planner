@@ -36,7 +36,11 @@ export default function CreateTripForm() {
       <button
         onClick={handleCreateTrip}
         disabled={creating}
-        className="flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg text-white bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg shadow-violet-200 hover:shadow-xl hover:shadow-violet-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+        style={{
+          background: 'linear-gradient(135deg, #ff6b6b, #ff8fab)',
+          boxShadow: '0 4px 14px rgba(255, 107, 107, 0.3)',
+        }}
       >
         {creating ? (
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -52,7 +56,7 @@ export default function CreateTripForm() {
       </button>
 
       {error && (
-        <div className="px-4 py-2 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">
+        <div className="px-4 py-2 rounded-lg bg-red-50 text-red-600 text-sm border border-red-200">
           {error}
         </div>
       )}
