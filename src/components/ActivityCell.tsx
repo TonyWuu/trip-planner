@@ -68,10 +68,11 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
   const subSlotOffset = isContinuation ? 0 : (minuteWithinSlot / 30) * 40;
 
   // Calculate height based on actual duration in pixels (30 min = 40px)
-  // This ensures the bottom aligns correctly regardless of start time offset
+  // Always use exact duration-based calculation to ensure proper alignment
   const span = daySpan ?? getActivitySpan(activity);
   const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
-  const baseHeightPx = daySpan ? span * 40 : (durationMinutes / 30) * 40;
+  // Use exact duration (durationMinutes / 30 * 40) to avoid rounding errors from Math.ceil in span
+  const baseHeightPx = (durationMinutes / 30) * 40;
   const heightPx = resizeHeight ?? baseHeightPx;
 
   // Keep ref in sync with state
