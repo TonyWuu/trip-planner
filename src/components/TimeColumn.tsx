@@ -41,15 +41,15 @@ export default function TimeColumn({ onPrevWeek, canGoPrev = true, showHeader = 
       )}
 
       {/* Time slots */}
-      <div className="pr-2">
+      <div className="pr-1 md:pr-2">
         {TIME_SLOTS.map((slot, index) => (
           <div
             key={index}
-            className="h-10 w-16 flex items-center justify-end"
+            className="h-10 w-10 md:w-16 flex items-center justify-end"
           >
             {slot.minute === 0 && (
               <span
-                className="text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-lg"
+                className="text-[9px] md:text-[11px] font-bold tabular-nums px-1 md:px-2 py-0.5 rounded-lg"
                 style={{
                   color: '#ff6b6b',
                   background: index % 2 === 0 ? 'rgba(255, 107, 107, 0.08)' : 'transparent',

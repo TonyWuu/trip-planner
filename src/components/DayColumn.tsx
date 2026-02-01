@@ -20,16 +20,16 @@ import ActivityCell from './ActivityCell';
 import FlightCell from './FlightCell';
 
 // Module-level state for tracking dragged item info across components
-let draggedItemSpan: number | null = null;
+let draggedItemHeight: number | null = null; // Height in pixels
 let draggedItemColor: string | null = null;
 let draggedItemYOffset: number = 0; // Y offset from mouse to top of activity
 
-export function setDraggedItemSpan(span: number | null) {
-  draggedItemSpan = span;
+export function setDraggedItemHeight(height: number | null) {
+  draggedItemHeight = height;
 }
 
-export function getDraggedItemSpan(): number | null {
-  return draggedItemSpan;
+export function getDraggedItemHeight(): number | null {
+  return draggedItemHeight;
 }
 
 export function setDraggedItemColor(color: string | null) {
@@ -179,7 +179,7 @@ export default function DayColumn({
 }: DayColumnProps) {
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
   const [dragOver15MinOffset, setDragOver15MinOffset] = useState<boolean>(false);
-  const [currentDragSpan, setCurrentDragSpan] = useState<number>(1);
+  const [currentDragHeight, setCurrentDragHeight] = useState<number>(40);
   const [currentDragColor, setCurrentDragColor] = useState<string>('#ff6b6b');
 
   // Filter activities that are visible on this day (including multi-day activities)
@@ -233,12 +233,12 @@ export default function DayColumn({
   const handleDragStart = (e: React.DragEvent, activity: Activity) => {
     e.dataTransfer.setData('application/json', JSON.stringify(activity));
     e.dataTransfer.effectAllowed = 'move';
-    // Calculate and store the span
+    // Calculate and store the height in pixels
     const start = new Date(activity.start_datetime);
     const end = new Date(activity.end_datetime);
     const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    const span = Math.ceil(durationMinutes / 30);
-    setDraggedItemSpan(span);
+    const heightPx = (durationMinutes / 30) * 40;
+    setDraggedItemHeight(heightPx);
   };
 
   const handleDragOver = (e: React.DragEvent, slotIndex: number) => {
@@ -261,10 +261,10 @@ export default function DayColumn({
     setDragOverSlot(adjustedSlotIndex);
     setDragOver15MinOffset(add15Min);
 
-    // Get the span and color from the module-level variables
-    const span = getDraggedItemSpan();
-    if (span !== null) {
-      setCurrentDragSpan(span);
+    // Get the height and color from the module-level variables
+    const height = getDraggedItemHeight();
+    if (height !== null) {
+      setCurrentDragHeight(height);
     }
     const color = getDraggedItemColor();
     if (color !== null) {
@@ -292,7 +292,7 @@ export default function DayColumn({
 
     setDragOverSlot(null);
     setDragOver15MinOffset(false);
-    setDraggedItemSpan(null);
+    setDraggedItemHeight(null);
     setDraggedItemColor(null);
     setDraggedItemYOffset(0);
 
@@ -404,7 +404,7 @@ export default function DayColumn({
             className="absolute left-1 right-1 rounded-lg border-2 border-dashed pointer-events-none z-30"
             style={{
               top: `${dragOverSlot * 40 + (dragOver15MinOffset ? 20 : 0)}px`,
-              height: `${Math.min(currentDragSpan, TIME_SLOTS.length - dragOverSlot) * 40 - 2}px`,
+              height: `${Math.min(currentDragHeight, (TIME_SLOTS.length - dragOverSlot) * 40) - 2}px`,
               borderColor: currentDragColor,
               backgroundColor: `${currentDragColor}15`,
             }}

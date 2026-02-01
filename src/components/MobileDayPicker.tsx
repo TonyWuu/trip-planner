@@ -36,31 +36,30 @@ export default function MobileDayPicker({
   const cityStyle = getCityStyle(currentDay.city);
 
   return (
-    <div className="md:hidden px-4 py-3">
+    <div className="md:hidden px-3 py-1.5">
       <div
-        className="flex items-center justify-between rounded-2xl px-3 py-4"
+        className="flex items-center justify-between rounded-xl px-2 py-2"
         style={{
           background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 251, 245, 0.9))',
-          border: '2px solid rgba(255, 107, 107, 0.15)',
-          boxShadow: '0 4px 12px rgba(255, 107, 107, 0.08)',
+          border: '1px solid rgba(255, 107, 107, 0.15)',
+          boxShadow: '0 2px 8px rgba(255, 107, 107, 0.06)',
         }}
       >
         <button
           onClick={() => canGoPrev && onDayChange(currentDayIndex - 1)}
           disabled={!canGoPrev}
-          className="p-3 rounded-xl transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-2 rounded-lg transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
-            background: canGoPrev ? 'linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 217, 61, 0.1))' : 'transparent',
-            border: canGoPrev ? '2px solid rgba(255, 107, 107, 0.2)' : 'none',
+            background: canGoPrev ? 'rgba(255, 107, 107, 0.08)' : 'transparent',
           }}
           aria-label="Previous day"
         >
-          <ChevronLeftIcon className="w-5 h-5" style={{ color: '#ff6b6b' }} />
+          <ChevronLeftIcon className="w-4 h-4" style={{ color: '#ff6b6b' }} />
         </button>
 
-        <div className="text-center">
+        <div className="text-center flex items-center gap-2">
           <div
-            className="text-2xl font-bold"
+            className="text-base font-bold"
             style={{
               fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
               background: cityStyle.gradient,
@@ -70,15 +69,14 @@ export default function MobileDayPicker({
           >
             {formatDateHeader(currentDay.date)}
           </div>
-          <div className="text-sm text-gray-400 font-medium mt-0.5">
+          <span className="text-xs text-gray-400 font-medium">
             {currentDay.dayOfWeek}
-          </div>
+          </span>
           {currentDay.city && (
             <span
-              className="inline-flex items-center gap-1 mt-2 px-3 py-1 text-xs font-bold rounded-xl text-white shadow-md"
+              className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-bold rounded-lg text-white"
               style={{
                 background: cityStyle.gradient,
-                boxShadow: `0 2px 8px ${cityStyle.color}40`,
               }}
             >
               <span>{cityStyle.emoji}</span>
@@ -90,14 +88,13 @@ export default function MobileDayPicker({
         <button
           onClick={() => canGoNext && onDayChange(currentDayIndex + 1)}
           disabled={!canGoNext}
-          className="p-3 rounded-xl transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-2 rounded-lg transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
-            background: canGoNext ? 'linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 217, 61, 0.1))' : 'transparent',
-            border: canGoNext ? '2px solid rgba(255, 107, 107, 0.2)' : 'none',
+            background: canGoNext ? 'rgba(255, 107, 107, 0.08)' : 'transparent',
           }}
           aria-label="Next day"
         >
-          <ChevronRightIcon className="w-5 h-5" style={{ color: '#ff6b6b' }} />
+          <ChevronRightIcon className="w-4 h-4" style={{ color: '#ff6b6b' }} />
         </button>
       </div>
     </div>

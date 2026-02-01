@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Category, WishlistItem } from '@/lib/types';
-import { XMarkIcon, TrashIcon, PlusIcon } from './Icons';
+import { XMarkIcon, TrashIcon, PlusIcon, getCategoryIcon, LinkIcon } from './Icons';
 import { getMapsUrl } from '@/lib/utils';
 import { createCategory, deleteCategory } from '@/lib/supabase';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -180,57 +180,56 @@ export default function WishlistModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Backdrop - playful with subtle pattern */}
       <div
-        className="absolute inset-0 bg-black/40"
-        style={{ backdropFilter: 'blur(4px)' }}
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(circle at 30% 30%, rgba(255, 107, 107, 0.15), transparent 50%), radial-gradient(circle at 70% 70%, rgba(77, 150, 255, 0.15), transparent 50%), rgba(0, 0, 0, 0.3)',
+          backdropFilter: 'blur(8px)',
+        }}
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl animate-slideUp bg-white"
+        className="relative w-full max-w-md max-h-[85vh] overflow-hidden rounded-xl shadow-2xl animate-slideUp"
+        style={{
+          background: '#ffffff',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+        }}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between p-5"
+          className="flex items-center justify-between px-3 py-2"
           style={{
             background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 143, 171, 0.08))',
             borderBottom: '1px solid rgba(255, 107, 107, 0.15)',
           }}
         >
-          <h2
-            className="text-xl font-bold"
-            style={{
-              fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
-              color: '#ff6b6b',
-            }}
-          >
+          <h2 className="text-sm font-bold" style={{ color: '#ff6b6b' }}>
             {isEditMode ? 'Edit Wishlist Item' : 'Add to Wishlist'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-[#ff6b6b]/10 transition-colors"
+            className="p-1 rounded hover:bg-[#ff6b6b]/10 transition-colors"
             style={{ color: '#ff6b6b' }}
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(85vh-90px)]">
+          <div className="p-4 space-y-3">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                What do you want to do? *
-              </label>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Name *</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
                 placeholder="e.g., Visit Victoria Peak"
                 autoFocus
               />
@@ -238,98 +237,94 @@ export default function WishlistModal({
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Category *
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {categories.map((cat) => (
-                  <div key={cat.id} className="relative group">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, category: cat.name })}
-                      className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        formData.category === cat.name
-                          ? 'text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                      style={
-                        formData.category === cat.name
-                          ? { backgroundColor: cat.color }
-                          : undefined
-                      }
-                    >
-                      {cat.name}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteCategory(e, cat)}
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs hover:bg-red-600"
-                      title={`Delete ${cat.name}`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Category *</label>
+              <div className="flex flex-wrap gap-1.5">
+                {categories.map((cat) => {
+                  const CategoryIcon = getCategoryIcon(cat.name);
+                  const isSelected = formData.category === cat.name;
+                  return (
+                    <div key={cat.id} className="relative group">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, category: cat.name })}
+                        className={`h-8 px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                          isSelected ? 'text-white shadow-sm' : 'text-gray-600 hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? cat.color : `${cat.color}15`,
+                          border: `1.5px solid ${isSelected ? 'transparent' : cat.color + '30'}`,
+                        }}
+                      >
+                        <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                        <span>{cat.name}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteCategory(e, cat)}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-[#ff6b6b] text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-[10px] font-bold shadow-sm"
+                        title={`Delete ${cat.name}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
                 <button
                   type="button"
                   onClick={() => setShowNewCategory(!showNewCategory)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all border-2 border-dashed ${
+                  className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border-2 border-dashed ${
                     showNewCategory
-                      ? 'border-amber-400 bg-amber-50 text-amber-600'
-                      : 'border-gray-300 text-gray-500 hover:border-amber-300 hover:text-amber-500'
+                      ? 'border-[#ff6b6b] bg-[#ff6b6b]/10 text-[#ff6b6b]'
+                      : 'border-gray-300 text-gray-400 hover:border-[#ff6b6b] hover:text-[#ff6b6b] hover:bg-[#ff6b6b]/5'
                   }`}
                 >
-                  <PlusIcon className="w-4 h-4 mx-auto" />
+                  <PlusIcon className="w-3.5 h-3.5 mx-auto" />
                 </button>
               </div>
 
               {/* New Category Form */}
               {showNewCategory && (
-                <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Category name"
-                    className="w-full px-3 py-2 border border-amber-200 rounded-lg bg-white text-gray-700 placeholder:text-gray-400 focus:border-amber-400 text-sm"
-                  />
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-gray-500">Color:</span>
-                    <div className="flex gap-1">
-                      {CATEGORY_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setNewCategoryColor(color)}
-                          className={`w-6 h-6 rounded-full transition-all ${
-                            newCategoryColor === color ? 'ring-2 ring-offset-1 ring-amber-400 scale-110' : ''
-                          }`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
+                <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="Category name"
+                      className="flex-1 h-8 px-3 rounded-lg text-sm bg-white border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateCategory}
+                      disabled={!newCategoryName.trim()}
+                      className="h-8 px-4 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
+                      style={{ background: '#ff6b6b' }}
+                    >
+                      Add
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCreateCategory}
-                    disabled={!newCategoryName.trim()}
-                    className="mt-2 w-full px-3 py-1.5 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Add Category
-                  </button>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    {CATEGORY_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setNewCategoryColor(color)}
+                        className={`w-5 h-5 rounded-full transition-transform ${newCategoryColor === color ? 'ring-2 ring-offset-1 ring-gray-400 scale-110' : 'hover:scale-110'}`}
+                        style={{ background: color }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Duration */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Estimated Duration
-              </label>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Duration</label>
               <select
                 value={formData.duration_minutes}
                 onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="h-9 px-3 rounded-lg text-sm text-gray-700 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
               >
                 <option value="30">30 minutes</option>
                 <option value="60">1 hour</option>
@@ -344,14 +339,12 @@ export default function WishlistModal({
 
             {/* Address */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Address / Location
-              </label>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Address</label>
               <AddressAutocomplete
                 value={formData.address}
                 onChange={(address) => setFormData({ ...formData, address })}
                 placeholder="Search for a place..."
-                className="border-gray-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="h-9"
                 onMapsClick={() => {
                   if (formData.address) {
                     window.open(getMapsUrl(formData.address), '_blank', 'noopener,noreferrer');
@@ -363,36 +356,32 @@ export default function WishlistModal({
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Notes
-              </label>
-              <textarea
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Notes</label>
+              <input
+                type="text"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={2}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
-                placeholder="Why do you want to do this? Any tips?"
+                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
+                placeholder="Why do you want to do this?"
               />
             </div>
 
             {/* Links */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Links (one per line)
-              </label>
-              <textarea
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Links</label>
+              <input
+                type="text"
                 value={formData.links}
                 onChange={(e) => setFormData({ ...formData, links: e.target.value })}
-                rows={2}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
-                placeholder="https://example.com"
+                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
+                placeholder="https://example.com (one per line)"
               />
             </div>
           </div>
 
           {/* Actions */}
           <div
-            className="sticky bottom-0 flex items-center justify-between p-5 bg-white"
+            className="sticky bottom-0 flex items-center justify-between px-4 py-2.5 bg-white"
             style={{ borderTop: '1px solid rgba(255, 107, 107, 0.15)' }}
           >
             {isEditMode && onDelete ? (
@@ -400,34 +389,29 @@ export default function WishlistModal({
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-2 px-4 py-2.5 text-[#ff6b6b] hover:bg-[#ff6b6b]/10 rounded-xl transition-colors disabled:opacity-50 font-semibold"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[#ff6b6b] hover:bg-[#ff6b6b]/10 rounded-lg transition-colors disabled:opacity-50 text-sm font-semibold"
               >
-                <TrashIcon className="w-4 h-4" />
+                <TrashIcon className="w-3.5 h-3.5" />
                 {deleting ? 'Removing...' : 'Remove'}
               </button>
             ) : (
               <div />
             )}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold transition-colors"
-                style={{ fontFamily: 'var(--font-dm-sans), system-ui, sans-serif' }}
+                className="px-4 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2.5 rounded-xl font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
-                style={{
-                  background: '#ff6b6b',
-                  fontFamily: 'var(--font-dm-sans), system-ui, sans-serif',
-                }}
+                className="px-5 py-1.5 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                style={{ background: '#ff6b6b' }}
               >
-                {saving ? 'Saving...' : isEditMode ? 'Update' : 'Add to Wishlist'}
+                {saving ? 'Saving...' : isEditMode ? 'Update' : 'Add'}
               </button>
             </div>
           </div>

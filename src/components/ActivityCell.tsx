@@ -5,7 +5,7 @@ import { Activity, Category } from '@/lib/types';
 import { formatTimeRange, getActivitySpan } from '@/lib/utils';
 import { XMarkIcon, getCategoryIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
-import { setDraggedItemSpan, getDraggedItemSpan, setDraggedItemColor, setDraggedItemYOffset } from './DayColumn';
+import { setDraggedItemHeight, setDraggedItemColor, setDraggedItemYOffset } from './DayColumn';
 
 interface ActivityCellProps {
   activity: Activity;
@@ -390,8 +390,8 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
     e.dataTransfer.setDragImage(ghost, rect.width / 2, yOffset);
     e.dataTransfer.effectAllowed = 'move';
 
-    // Set the dragged item span and color for highlighting
-    setDraggedItemSpan(span);
+    // Set the dragged item height and color for highlighting
+    setDraggedItemHeight(baseHeightPx);
     setDraggedItemColor(bgColor);
 
     // Clean up ghost after a short delay
@@ -411,7 +411,7 @@ export default function ActivityCell({ activity, categories, onClick, onDelete, 
 
   const handleDragEnd = () => {
     // Clear the dragged item info when drag ends
-    setDraggedItemSpan(null);
+    setDraggedItemHeight(null);
     setDraggedItemColor(null);
     setDraggedItemYOffset(0);
     setIsDragging(false);

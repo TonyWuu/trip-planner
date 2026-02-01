@@ -18,6 +18,38 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
   },
   {
     type: 'flight',
+    name: 'UO 542: HKG → HAN',
+    start_datetime: '2025-02-21T20:05', // Departs HKG 20:05 HKT
+    end_datetime: '2025-02-21T22:10',   // Arrives HAN 21:10 Vietnam time = 22:10 HKT
+    details: {
+      flight_number: 'UO 542',
+      airline: 'HK Express',
+      departure_city: 'Hong Kong',
+      arrival_city: 'Hanoi',
+      departure_code: 'HKG',
+      arrival_code: 'HAN',
+      local_arrival_time: '21:10 (Vietnam)',
+    },
+    color: '#3B82F6',
+  },
+  {
+    type: 'flight',
+    name: 'UO 543: HAN → HKG',
+    start_datetime: '2025-02-27T22:55', // Departs HAN 21:55 Vietnam time = 22:55 HKT
+    end_datetime: '2025-02-28T00:40',   // Arrives HKG 00:40 HKT
+    details: {
+      flight_number: 'UO 543',
+      airline: 'HK Express',
+      departure_city: 'Hanoi',
+      arrival_city: 'Hong Kong',
+      departure_code: 'HAN',
+      arrival_code: 'HKG',
+      local_departure_time: '21:55 (Vietnam)',
+    },
+    color: '#3B82F6',
+  },
+  {
+    type: 'flight',
     name: 'FM 3022: HKG → PVG',
     start_datetime: '2025-02-28T15:25',
     end_datetime: '2025-02-28T18:05',
