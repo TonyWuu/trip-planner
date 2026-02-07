@@ -69,9 +69,11 @@ function assignRows(items: FixedItem[], weekStart: Date, daysToShow: number): Ma
 export default function FixedItemsBar({ flights, hotels, weekDays, weekStart, onItemClick }: FixedItemsBarProps) {
   if (weekDays.length === 0) return null;
 
-  // Calculate row assignments for flights
+  // Calculate row assignments for flights and hotels
   const flightRows = assignRows(flights, weekStart, weekDays.length);
   const maxFlightRows = Math.max(1, ...Array.from(flightRows.values()).map(r => r + 1));
+  const hotelRows = assignRows(hotels, weekStart, weekDays.length);
+  const maxHotelRows = Math.max(1, ...Array.from(hotelRows.values()).map(r => r + 1));
 
   const renderBar = (item: FixedItem, type: 'flight' | 'hotel', index: number = 0, row: number = 0) => {
     const { startCol, span } = getFixedItemSpan(item, weekStart, TRIP_START_DATE, TRIP_END_DATE, weekDays.length);
@@ -109,6 +111,7 @@ export default function FixedItemsBar({ flights, hotels, weekDays, weekStart, on
   };
 
   const flightRowHeight = maxFlightRows * 22 + 4;
+  const hotelRowHeight = maxHotelRows * 22 + 4;
 
   return (
     <div
@@ -128,10 +131,13 @@ export default function FixedItemsBar({ flights, hotels, weekDays, weekStart, on
         </div>
       </div>
 
-      {/* Hotels row */}
-      <div className="relative h-6 ml-[68px] mr-10 overflow-hidden rounded">
-        <div className="absolute inset-0 flex items-center">
-          {hotels.map((hotel, index) => renderBar(hotel, 'hotel', index))}
+      {/* Hotels rows */}
+      <div className="relative ml-[68px] mr-10 overflow-hidden rounded" style={{ height: `${hotelRowHeight}px` }}>
+        <div className="absolute inset-0">
+          {hotels.map((hotel, index) => {
+            const row = hotelRows.get(hotel.id) ?? 0;
+            return renderBar(hotel, 'hotel', index, row);
+          })}
         </div>
       </div>
     </div>
