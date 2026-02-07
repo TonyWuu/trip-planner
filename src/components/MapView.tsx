@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-import { Activity, Category, FixedItem, DayInfo } from '@/lib/types';
+import { Activity, Category, FixedItem, DayInfo, WishlistItem } from '@/lib/types';
 import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
 import { formatTimeRange, getActivityDateStr } from '@/lib/utils';
 import { getCategoryIcon } from './Icons';
@@ -12,6 +12,7 @@ interface MapViewProps {
   activities: Activity[];
   flights: FixedItem[];
   hotels: FixedItem[];
+  wishlistItems: WishlistItem[];
   categories: Category[];
   days: DayInfo[];
   onActivityClick?: (activity: Activity) => void;
@@ -20,8 +21,8 @@ interface MapViewProps {
 
 interface GeocodedLocation {
   id: string;
-  type: 'activity' | 'hotel';
-  item: Activity | FixedItem;
+  type: 'activity' | 'hotel' | 'wishlist';
+  item: Activity | FixedItem | WishlistItem;
   lat: number;
   lng: number;
   address: string;
@@ -101,6 +102,7 @@ export default function MapView({
   activities,
   flights,
   hotels,
+  wishlistItems,
   categories,
   days,
   onActivityClick,
@@ -119,7 +121,7 @@ export default function MapView({
 
   // Get items with addresses
   const itemsWithAddresses = useMemo(() => {
-    const items: { id: string; type: 'activity' | 'hotel'; item: Activity | FixedItem; address: string; dateStr?: string }[] = [];
+    const items: { id: string; type: 'activity' | 'hotel' | 'wishlist'; item: Activity | FixedItem | WishlistItem; address: string; dateStr?: string }[] = [];
 
     // Add activities with addresses
     activities.forEach((activity) => {
@@ -147,8 +149,20 @@ export default function MapView({
       }
     });
 
+    // Add wishlist items with addresses
+    wishlistItems.forEach((wishlistItem) => {
+      if (wishlistItem.address) {
+        items.push({
+          id: wishlistItem.id,
+          type: 'wishlist',
+          item: wishlistItem,
+          address: wishlistItem.address,
+        });
+      }
+    });
+
     return items;
-  }, [activities, hotels]);
+  }, [activities, hotels, wishlistItems]);
 
   // Filter locations based on selected day
   const filteredLocations = useMemo(() => {
@@ -156,7 +170,10 @@ export default function MapView({
       return geocodedLocations;
     }
     return geocodedLocations.filter((loc) => {
-      if (loc.type === 'activity') {
+      if (loc.type === 'wishlist') {
+        // Always show wishlist items
+        return true;
+      } else if (loc.type === 'activity') {
         // Filter activities by date
         const activity = loc.item as Activity;
         return getActivityDateStr(activity) === selectedDay;
@@ -164,12 +181,10 @@ export default function MapView({
         // Filter hotels - only show if selected day is within check-in/check-out range
         const hotel = loc.item as FixedItem;
         const selectedDate = parseISO(selectedDay);
-        // Extract just the date part from datetime strings
         const checkInDateStr = hotel.start_datetime.split('T')[0];
         const checkOutDateStr = hotel.end_datetime.split('T')[0];
         const checkIn = parseISO(checkInDateStr);
         const checkOut = parseISO(checkOutDateStr);
-        // Show hotel if selected day is on or after check-in and before check-out
         return selectedDate >= checkIn && selectedDate < checkOut;
       }
       return false;
@@ -348,11 +363,19 @@ export default function MapView({
       >
         {filteredLocations.map((location) => {
           const isActivity = location.type === 'activity';
+          const isWishlist = location.type === 'wishlist';
           const activity = isActivity ? (location.item as Activity) : null;
-          const color = isActivity && activity ? getCategoryColor(activity) : '#22C55E';
+          const wishlistItem = isWishlist ? (location.item as WishlistItem) : null;
+          const color = isActivity && activity
+            ? getCategoryColor(activity)
+            : isWishlist
+            ? '#F59E0B'
+            : '#22C55E';
           const label = isActivity && location.orderNumber
             ? location.orderNumber.toString()
-            : (location.type === 'hotel' ? 'H' : '');
+            : location.type === 'hotel' ? 'H'
+            : isWishlist ? '★'
+            : '';
 
           return (
             <Marker
@@ -399,6 +422,20 @@ export default function MapView({
                     )}
                   </p>
                 </>
+              ) : selectedLocation.type === 'wishlist' ? (
+                <>
+                  <h3 className="font-bold text-gray-900 mb-1">
+                    {(selectedLocation.item as WishlistItem).name}
+                  </h3>
+                  <p className="text-xs text-amber-600 mb-1">
+                    {(selectedLocation.item as WishlistItem).category} · Wishlist
+                  </p>
+                  {(selectedLocation.item as WishlistItem).notes && (
+                    <p className="text-xs text-gray-600 mb-2">
+                      {(selectedLocation.item as WishlistItem).notes}
+                    </p>
+                  )}
+                </>
               ) : (
                 <>
                   <h3 className="font-bold text-gray-900 mb-1">
@@ -408,12 +445,14 @@ export default function MapView({
                 </>
               )}
               <p className="text-xs text-gray-500 mb-2">{selectedLocation.address}</p>
-              <button
-                onClick={handleViewDetails}
-                className="w-full px-3 py-1.5 text-xs font-medium text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors"
-              >
-                View Details
-              </button>
+              {selectedLocation.type !== 'wishlist' && (
+                <button
+                  onClick={handleViewDetails}
+                  className="w-full px-3 py-1.5 text-xs font-medium text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors"
+                >
+                  View Details
+                </button>
+              )}
             </div>
           </InfoWindow>
         )}
@@ -435,6 +474,10 @@ export default function MapView({
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
             <span className="text-gray-600">Hotels</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-amber-500 border border-white shadow-sm" />
+            <span className="text-gray-600">Wishlist</span>
           </div>
         </div>
       </div>

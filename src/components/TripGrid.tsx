@@ -469,6 +469,7 @@ export default function TripGrid({ trip }: TripGridProps) {
               activities={activities}
               flights={flights}
               hotels={hotels}
+              wishlistItems={wishlistItems}
               categories={categories}
               days={allDays}
               onActivityClick={handleActivityClick}
