@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { Activity, Category, FixedItem, DayInfo, WishlistItem } from '@/lib/types';
 import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
@@ -30,6 +30,7 @@ interface GeocodedLocation {
   address: string;
   orderNumber?: number; // Order within the day (1, 2, 3...)
   dateStr?: string;
+  placeId?: string;
 }
 
 const CATEGORY_MARKER_COLORS: Record<string, string> = {
@@ -117,6 +118,8 @@ export default function MapView({
   const [selectedLocation, setSelectedLocation] = useState<GeocodedLocation | null>(null);
   const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'done'>('idle');
   const [selectedDay, setSelectedDay] = useState<string>('all'); // 'all' or dateStr
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({}); // placeId -> photo URL
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -246,26 +249,47 @@ export default function MapView({
     onFocusHandled?.();
   }, [focusWishlistItem, map, geocodedLocations, geocodingStatus, onFocusHandled]);
 
-  // Geocode addresses when map is loaded
   const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
+    placesServiceRef.current = new google.maps.places.PlacesService(mapInstance);
+  }, []);
+
+  // Geocode addresses reactively when items change
+  useEffect(() => {
+    if (!map) return;
 
     if (itemsWithAddresses.length === 0) {
+      setGeocodedLocations([]);
+      setGeocodingStatus('done');
+      return;
+    }
+
+    // Find items not yet geocoded
+    const alreadyGeocoded = new Set(geocodedLocations.map((loc) => loc.id));
+    const newItems = itemsWithAddresses.filter((item) => !alreadyGeocoded.has(item.id));
+
+    // Remove geocoded locations for items that no longer exist
+    const currentIds = new Set(itemsWithAddresses.map((item) => item.id));
+    const retained = geocodedLocations.filter((loc) => currentIds.has(loc.id));
+
+    if (newItems.length === 0) {
+      if (retained.length !== geocodedLocations.length) {
+        setGeocodedLocations(calculateOrderNumbers(retained));
+      }
       setGeocodingStatus('done');
       return;
     }
 
     setGeocodingStatus('loading');
     const geocoder = new google.maps.Geocoder();
-    const locations: GeocodedLocation[] = [];
+    const newLocations: GeocodedLocation[] = [];
     let completed = 0;
 
-    itemsWithAddresses.forEach((item, index) => {
-      // Add delay to avoid rate limiting
+    newItems.forEach((item, index) => {
       setTimeout(() => {
         geocoder.geocode({ address: item.address }, (results, status) => {
           if (status === 'OK' && results && results[0]) {
-            locations.push({
+            newLocations.push({
               id: item.id,
               type: item.type,
               item: item.item,
@@ -273,20 +297,24 @@ export default function MapView({
               lng: results[0].geometry.location.lng(),
               address: item.address,
               dateStr: item.dateStr,
+              placeId: results[0].place_id,
             });
           }
 
           completed++;
-          if (completed === itemsWithAddresses.length) {
-            // Calculate order numbers for activities within each day
-            const locationsWithOrder = calculateOrderNumbers(locations);
-            setGeocodedLocations(locationsWithOrder);
+          if (completed === newItems.length) {
+            setGeocodedLocations((prev) => {
+              const ids = new Set(itemsWithAddresses.map((i) => i.id));
+              const kept = prev.filter((loc) => ids.has(loc.id));
+              return calculateOrderNumbers([...kept, ...newLocations]);
+            });
             setGeocodingStatus('done');
           }
         });
-      }, index * 200); // 200ms delay between requests
+      }, index * 200);
     });
-  }, [itemsWithAddresses]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, itemsWithAddresses]);
 
   const onMapUnmount = useCallback(() => {
     setMap(null);
@@ -299,6 +327,19 @@ export default function MapView({
 
   const handleMarkerClick = (location: GeocodedLocation) => {
     setSelectedLocation(location);
+
+    // Fetch photo if we have a placeId and haven't already
+    if (location.placeId && !photoUrls[location.placeId] && placesServiceRef.current) {
+      placesServiceRef.current.getDetails(
+        { placeId: location.placeId, fields: ['photos'] },
+        (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && place?.photos?.[0]) {
+            const url = place.photos[0].getUrl({ maxWidth: 280, maxHeight: 160 });
+            setPhotoUrls((prev) => ({ ...prev, [location.placeId!]: url }));
+          }
+        }
+      );
+    }
   };
 
   const handleInfoWindowClose = () => {
@@ -466,8 +507,17 @@ export default function MapView({
           <InfoWindow
             position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
             onCloseClick={handleInfoWindowClose}
+            options={{ maxWidth: 280 }}
           >
-            <div className="p-2 max-w-[250px]">
+            <div className="max-w-[250px] -mt-1">
+              {selectedLocation.placeId && photoUrls[selectedLocation.placeId] && (
+                <img
+                  src={photoUrls[selectedLocation.placeId]}
+                  alt={selectedLocation.address}
+                  className="w-full h-[120px] object-cover rounded-lg mb-2"
+                />
+              )}
+              <div className="px-1">
               {selectedLocation.type === 'activity' ? (
                 <>
                   <h3 className="font-bold text-gray-900 mb-1">
@@ -514,6 +564,7 @@ export default function MapView({
                   View Details
                 </button>
               )}
+              </div>
             </div>
           </InfoWindow>
         )}
