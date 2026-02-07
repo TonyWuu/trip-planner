@@ -27,6 +27,8 @@ export interface FlightDetails {
   arrival_city: string;
   departure_code: string;
   arrival_code: string;
+  local_arrival_time?: string;
+  local_departure_time?: string;
 }
 
 export interface HotelDetails {

@@ -7,12 +7,12 @@ import { PlaneIcon, BuildingIcon } from './Icons';
 
 // Distinct colors for different hotels
 const HOTEL_COLORS = [
-  { bg: 'rgba(107, 203, 119, 0.15)', border: 'rgba(107, 203, 119, 0.3)', text: '#15803d' }, // Green
-  { bg: 'rgba(176, 136, 249, 0.15)', border: 'rgba(176, 136, 249, 0.3)', text: '#7c3aed' }, // Purple
-  { bg: 'rgba(255, 143, 171, 0.15)', border: 'rgba(255, 143, 171, 0.3)', text: '#be185d' }, // Pink
-  { bg: 'rgba(255, 217, 61, 0.15)', border: 'rgba(255, 217, 61, 0.3)', text: '#b45309' },  // Yellow
-  { bg: 'rgba(20, 184, 166, 0.15)', border: 'rgba(20, 184, 166, 0.3)', text: '#0f766e' },  // Teal
-  { bg: 'rgba(251, 146, 60, 0.15)', border: 'rgba(251, 146, 60, 0.3)', text: '#c2410c' },  // Orange
+  { bg: 'rgba(107, 203, 119, 0.35)', border: 'rgba(107, 203, 119, 0.6)', text: '#15803d' }, // Green
+  { bg: 'rgba(176, 136, 249, 0.35)', border: 'rgba(176, 136, 249, 0.6)', text: '#7c3aed' }, // Purple
+  { bg: 'rgba(255, 143, 171, 0.35)', border: 'rgba(255, 143, 171, 0.6)', text: '#be185d' }, // Pink
+  { bg: 'rgba(255, 207, 51, 0.35)', border: 'rgba(255, 207, 51, 0.6)', text: '#92400e' },  // Yellow
+  { bg: 'rgba(20, 184, 166, 0.35)', border: 'rgba(20, 184, 166, 0.6)', text: '#0f766e' },  // Teal
+  { bg: 'rgba(251, 146, 60, 0.35)', border: 'rgba(251, 146, 60, 0.6)', text: '#c2410c' },  // Orange
 ];
 
 interface FixedItemsBarProps {

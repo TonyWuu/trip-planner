@@ -43,6 +43,7 @@ export default function AddressAutocomplete({
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const justSelectedRef = useRef(false);
+  const syncedFromPropsRef = useRef(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -58,6 +59,7 @@ export default function AddressAutocomplete({
 
   // Sync external value changes
   useEffect(() => {
+    syncedFromPropsRef.current = true;
     setInputValue(value);
   }, [value]);
 
@@ -158,9 +160,13 @@ export default function AddressAutocomplete({
       return;
     }
 
-    // Don't search if we just selected an item
+    // Don't search if we just selected an item or synced from props
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
+      return;
+    }
+    if (syncedFromPropsRef.current) {
+      syncedFromPropsRef.current = false;
       return;
     }
 
