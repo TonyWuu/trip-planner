@@ -28,6 +28,14 @@ interface WishlistModalProps {
 
 const CITIES = ['Hong Kong', 'Shanghai', 'Chengdu', 'Unknown'];
 
+function detectCityFromAddress(address: string): string | null {
+  const lower = address.toLowerCase();
+  if (['hong kong', 'kowloon', 'wan chai', 'tsim sha tsui', 'mong kok', 'causeway bay'].some(k => lower.includes(k))) return 'Hong Kong';
+  if (['shanghai', 'huangpu', 'pudong', 'xuhui', 'jing\'an', 'jingan'].some(k => lower.includes(k))) return 'Shanghai';
+  if (['chengdu', 'luomashi', 'jinniu', 'wuhou'].some(k => lower.includes(k))) return 'Chengdu';
+  return null;
+}
+
 interface FormData {
   name: string;
   category: string;
@@ -104,7 +112,7 @@ export default function WishlistModal({
       setFormData({
         name: '',
         category: 'Activity',
-        city: 'Hong Kong',
+        city: 'Unknown',
         duration_minutes: '60',
         address: '',
         notes: '',
@@ -382,7 +390,14 @@ export default function WishlistModal({
               <label className="block text-[11px] font-semibold text-gray-500 mb-1">Address</label>
               <AddressAutocomplete
                 value={formData.address}
-                onChange={(address) => setFormData({ ...formData, address })}
+                onChange={(address) => {
+                  const detected = detectCityFromAddress(address);
+                  setFormData({
+                    ...formData,
+                    address,
+                    city: detected || (address ? formData.city : 'Unknown'),
+                  });
+                }}
                 placeholder="Search for a place..."
                 className="h-9"
                 onMapsClick={() => {
