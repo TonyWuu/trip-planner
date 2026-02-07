@@ -282,15 +282,6 @@ export default function MapView({
             const locationsWithOrder = calculateOrderNumbers(locations);
             setGeocodedLocations(locationsWithOrder);
             setGeocodingStatus('done');
-
-            // Fit bounds to show all markers
-            if (locations.length > 0 && mapInstance) {
-              const bounds = new google.maps.LatLngBounds();
-              locations.forEach((loc) => {
-                bounds.extend({ lat: loc.lat, lng: loc.lng });
-              });
-              mapInstance.fitBounds(bounds, 50);
-            }
           }
         });
       }, index * 200); // 200ms delay between requests
