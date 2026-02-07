@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { parseISO, addDays, startOfDay, isBefore, isAfter, differenceInMilliseconds, addMinutes, format } from 'date-fns';
 import { Trip, Activity, Category, ModalMode, FixedItem, WishlistItem } from '@/lib/types';
-import { getWeekDays, getDaysInRange } from '@/lib/utils';
+import { getWeekDays, getDaysInRange, getCityForDate } from '@/lib/utils';
 import { getCategories } from '@/lib/supabase';
 import { useActivities } from '@/hooks/useActivities';
 import { useFixedItems } from '@/hooks/useFixedItems';
@@ -89,8 +89,8 @@ export default function TripGrid({ trip }: TripGridProps) {
   const weekDays = getWeekDays(weekStart, trip.start_date, trip.end_date, daysToShow);
 
   const canGoPrev = isAfter(weekStart, tripStart) || startOfDay(weekStart).getTime() !== startOfDay(tripStart).getTime();
-  const nextWeekStart = addDays(weekStart, daysToShow);
-  const canGoNext = isBefore(nextWeekStart, tripEnd);
+  const lastVisibleDay = weekDays.length > 0 ? weekDays[weekDays.length - 1].date : weekStart;
+  const canGoNext = isBefore(startOfDay(lastVisibleDay), startOfDay(tripEnd));
 
   const handlePrevWeek = useCallback(() => {
     const newStart = addDays(weekStart, -daysToShow);
@@ -103,9 +103,15 @@ export default function TripGrid({ trip }: TripGridProps) {
 
   const handleNextWeek = useCallback(() => {
     if (canGoNext) {
-      setWeekStart(nextWeekStart);
+      const newStart = addDays(weekStart, daysToShow);
+      const maxStart = addDays(tripEnd, -(daysToShow - 1));
+      if (isAfter(newStart, maxStart)) {
+        setWeekStart(startOfDay(maxStart));
+      } else {
+        setWeekStart(newStart);
+      }
     }
-  }, [canGoNext, nextWeekStart]);
+  }, [canGoNext, weekStart, daysToShow, tripEnd]);
 
   const handleCellClick = useCallback((date: string, hour: number, minute: number) => {
     setModalMode('create');
@@ -263,11 +269,21 @@ export default function TripGrid({ trip }: TripGridProps) {
       const endDate = new Date(activity.end_datetime);
       const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 
+      // Determine city from activity date
+      const activityDate = format(startDate, 'yyyy-MM-dd');
+      const city = getCityForDate(activityDate);
+      // Normalize transit/multi-city labels to base city
+      const normalizedCity = city.includes('Hong Kong') ? 'Hong Kong'
+        : city.includes('Shanghai') ? 'Shanghai'
+        : city.includes('Chengdu') ? 'Chengdu'
+        : 'Hong Kong';
+
       // Create wishlist item from activity
       await createWishlistItem({
         trip_id: trip.id,
         name: activity.name,
         category: activity.category,
+        city: normalizedCity,
         duration_minutes: durationMinutes,
         address: activity.address,
         notes: activity.notes,

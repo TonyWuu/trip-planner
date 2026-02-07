@@ -211,51 +211,95 @@ export default function WishlistSidebar({
                 </button>
               </div>
             ) : (
-              items.map((item) => {
-                const category = categories.find((c) => c.name === item.category);
-                const catColor = category?.color || '#ff6b6b';
-                const CategoryIcon = getCategoryIcon(item.category);
+              (() => {
+                const cityOrder = ['Hong Kong', 'Shanghai', 'Chengdu', 'Unknown'];
+                const cityColors: Record<string, string> = {
+                  'Hong Kong': '#ff6b6b',
+                  'Shanghai': '#4d96ff',
+                  'Chengdu': '#6bcb77',
+                  'Unknown': '#9ca3af',
+                };
 
-                return (
-                  <div
-                    key={item.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, item)}
-                    onDragEnd={handleDragEnd}
-                    onClick={() => handleItemClick(item)}
-                    className="group relative p-2 rounded-lg cursor-grab active:cursor-grabbing active:scale-[0.98] transition-all hover:shadow-md"
-                    style={{
-                      background: `${catColor}10`,
-                      border: `1px solid ${catColor}25`,
-                    }}
-                  >
-                    {/* Delete button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(item);
-                      }}
-                      className="absolute top-1.5 right-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/50"
-                      style={{ color: catColor }}
-                    >
-                      <XMarkIcon className="w-3 h-3" />
-                    </button>
+                function detectCityFromAddress(address: string | null): string | null {
+                  if (!address) return null;
+                  const lower = address.toLowerCase();
+                  if (lower.includes('hong kong') || lower.includes('kowloon') || lower.includes('wan chai') || lower.includes('tsim sha tsui') || lower.includes('mong kok') || lower.includes('causeway bay') || lower.includes('central,')) return 'Hong Kong';
+                  if (lower.includes('shanghai') || lower.includes('huangpu') || lower.includes('pudong') || lower.includes('xuhui') || lower.includes('jing\'an') || lower.includes('jingan')) return 'Shanghai';
+                  if (lower.includes('chengdu') || lower.includes('luomashi') || lower.includes('jinniu') || lower.includes('wuhou')) return 'Chengdu';
+                  return null;
+                }
 
-                    <div className="flex items-center gap-1 pr-5" style={{ color: catColor }}>
-                      <CategoryIcon className="w-3 h-3 flex-shrink-0 opacity-80" />
-                      <p className="text-xs font-semibold truncate">
-                        {item.name}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[10px] flex items-center gap-0.5 opacity-75" style={{ color: catColor }}>
-                        <ClockIcon className="w-2.5 h-2.5" />
-                        {formatDuration(item.duration_minutes)}
+                function getItemCity(item: WishlistItem): string {
+                  // Selected city takes precedence, then address detection, then Unknown
+                  if (item.city && item.city !== 'Unknown') return item.city;
+                  return detectCityFromAddress(item.address) || 'Unknown';
+                }
+
+                const grouped = cityOrder.map((city) => ({
+                  city,
+                  color: cityColors[city] || '#6b7280',
+                  items: items.filter((item) => getItemCity(item) === city),
+                })).filter((group) => group.items.length > 0);
+
+                return grouped.map((group) => (
+                  <div key={group.city}>
+                    <div className="flex items-center gap-1.5 px-1 py-1.5 mt-1 first:mt-0">
+                      <div className="w-2 h-2 rounded-full" style={{ background: group.color }} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: group.color }}>
+                        {group.city}
                       </span>
+                      <span className="text-[10px] text-gray-400">({group.items.length})</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {group.items.map((item) => {
+                        const category = categories.find((c) => c.name === item.category);
+                        const catColor = category?.color || '#ff6b6b';
+                        const CategoryIcon = getCategoryIcon(item.category);
+
+                        return (
+                          <div
+                            key={item.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, item)}
+                            onDragEnd={handleDragEnd}
+                            onClick={() => handleItemClick(item)}
+                            className="group relative p-2 rounded-lg cursor-grab active:cursor-grabbing active:scale-[0.98] transition-all hover:shadow-md"
+                            style={{
+                              background: `${catColor}10`,
+                              border: `1px solid ${catColor}25`,
+                            }}
+                          >
+                            {/* Delete button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(item);
+                              }}
+                              className="absolute top-1.5 right-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/50"
+                              style={{ color: catColor }}
+                            >
+                              <XMarkIcon className="w-3 h-3" />
+                            </button>
+
+                            <div className="flex items-center gap-1 pr-5" style={{ color: catColor }}>
+                              <CategoryIcon className="w-3 h-3 flex-shrink-0 opacity-80" />
+                              <p className="text-xs font-semibold truncate">
+                                {item.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[10px] flex items-center gap-0.5 opacity-75" style={{ color: catColor }}>
+                                <ClockIcon className="w-2.5 h-2.5" />
+                                {formatDuration(item.duration_minutes)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                );
-              })
+                ));
+              })()
             )}
           </div>
         </div>

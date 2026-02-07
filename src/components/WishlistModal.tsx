@@ -26,9 +26,12 @@ interface WishlistModalProps {
   tripId: string;
 }
 
+const CITIES = ['Hong Kong', 'Shanghai', 'Chengdu', 'Unknown'];
+
 interface FormData {
   name: string;
   category: string;
+  city: string;
   duration_minutes: string;
   address: string;
   notes: string;
@@ -50,6 +53,7 @@ export default function WishlistModal({
   const [formData, setFormData] = useState<FormData>({
     name: '',
     category: 'Activity',
+    city: 'Hong Kong',
     duration_minutes: '60',
     address: '',
     notes: '',
@@ -90,6 +94,7 @@ export default function WishlistModal({
       setFormData({
         name: item.name,
         category: item.category,
+        city: item.city || 'Hong Kong',
         duration_minutes: item.duration_minutes.toString(),
         address: item.address || '',
         notes: item.notes || '',
@@ -99,6 +104,7 @@ export default function WishlistModal({
       setFormData({
         name: '',
         category: 'Activity',
+        city: 'Hong Kong',
         duration_minutes: '60',
         address: '',
         notes: '',
@@ -117,6 +123,7 @@ export default function WishlistModal({
       trip_id: tripId,
       name: formData.name,
       category: formData.category,
+      city: formData.city,
       duration_minutes: parseInt(formData.duration_minutes) || 60,
       address: formData.address || null,
       notes: formData.notes || null,
@@ -318,6 +325,39 @@ export default function WishlistModal({
               )}
             </div>
 
+            {/* City */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-500 mb-1">City *</label>
+              <div className="flex gap-1.5">
+                {CITIES.map((city) => {
+                  const isSelected = formData.city === city;
+                  const cityColors: Record<string, string> = {
+                    'Hong Kong': '#ff6b6b',
+                    'Shanghai': '#4d96ff',
+                    'Chengdu': '#6bcb77',
+                    'Unknown': '#9ca3af',
+                  };
+                  const color = cityColors[city] || '#6b7280';
+                  return (
+                    <button
+                      key={city}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, city })}
+                      className={`h-8 px-3 rounded-lg text-xs font-semibold transition-all ${
+                        isSelected ? 'text-white shadow-sm' : 'text-gray-600 hover:opacity-80'
+                      }`}
+                      style={{
+                        background: isSelected ? color : `${color}15`,
+                        border: `1.5px solid ${isSelected ? 'transparent' : color + '30'}`,
+                      }}
+                    >
+                      {city}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Duration */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 mb-1">Duration</label>
@@ -357,11 +397,11 @@ export default function WishlistModal({
             {/* Notes */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 mb-1">Notes</label>
-              <input
-                type="text"
+              <textarea
+                rows={4}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
+                className="w-full px-3 py-2 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors resize-y"
                 placeholder="Why do you want to do this?"
               />
             </div>

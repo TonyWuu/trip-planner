@@ -500,11 +500,11 @@ export default function ActivityModal({
             {/* Notes */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 mb-1">Notes</label>
-              <input
-                type="text"
+              <textarea
+                rows={4}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors"
+                className="w-full px-3 py-2 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors resize-y"
                 placeholder="Additional notes..."
               />
             </div>

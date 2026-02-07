@@ -195,6 +195,15 @@ export default function DayColumn({
   // Calculate overlap layout for all activities in this day
   const overlapLayout = calculateOverlapLayout(dayActivities);
 
+  // Calculate overlap layout for flights using the same algorithm
+  const flightOverlapLayout = calculateOverlapLayout(
+    dayFlights.map((f) => ({
+      id: f.id,
+      start_datetime: f.start_datetime,
+      end_datetime: f.end_datetime,
+    } as Activity))
+  );
+
   const getActivitiesStartingInSlot = (slotIndex: number): { activity: Activity; isContinuation: boolean }[] => {
     const results: { activity: Activity; isContinuation: boolean }[] = [];
 
@@ -365,15 +374,20 @@ export default function DayColumn({
               onDrop={(e) => handleDrop(e, index)}
             >
               {/* Render flights */}
-              {slotFlights.map(({ flight, isContinuation }) => (
-                <FlightCell
-                  key={flight.id + (isContinuation ? '-cont' : '')}
-                  flight={flight}
-                  onClick={onFlightClick ? () => onFlightClick(flight) : undefined}
-                  daySpan={getFlightSpanForDay(flight, day.dateStr)}
-                  isContinuation={isContinuation}
-                />
-              ))}
+              {slotFlights.map(({ flight, isContinuation }) => {
+                const flightLayout = flightOverlapLayout.get(flight.id) ?? { column: 0, totalColumns: 1 };
+                return (
+                  <FlightCell
+                    key={flight.id + (isContinuation ? '-cont' : '')}
+                    flight={flight}
+                    onClick={onFlightClick ? () => onFlightClick(flight) : undefined}
+                    daySpan={getFlightSpanForDay(flight, day.dateStr)}
+                    isContinuation={isContinuation}
+                    column={flightLayout.column}
+                    totalColumns={flightLayout.totalColumns}
+                  />
+                );
+              })}
               {/* Render activities */}
               {slotActivities.map(({ activity, isContinuation }) => {
                 const layout = overlapLayout.get(activity.id) ?? { column: 0, totalColumns: 1 };

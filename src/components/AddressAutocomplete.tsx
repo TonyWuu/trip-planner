@@ -43,7 +43,7 @@ export default function AddressAutocomplete({
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const justSelectedRef = useRef(false);
-  const lastEmittedValueRef = useRef(value);
+  const userTypingRef = useRef(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -57,13 +57,9 @@ export default function AddressAutocomplete({
     }
   }, [loadError]);
 
-  // Sync external value changes (skip search only for genuinely external updates)
+  // Sync external value changes
   useEffect(() => {
-    if (value !== lastEmittedValueRef.current) {
-      justSelectedRef.current = true;
-    }
     setInputValue(value);
-    lastEmittedValueRef.current = value;
   }, [value]);
 
   // Initialize autocomplete service when Google Maps is loaded
@@ -163,9 +159,14 @@ export default function AddressAutocomplete({
       return;
     }
 
-    // Don't search if we just selected an item or synced from props
+    // Don't search if we just selected an item
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
+      return;
+    }
+
+    // Only search when user is actively typing
+    if (!userTypingRef.current) {
       return;
     }
 
@@ -177,15 +178,15 @@ export default function AddressAutocomplete({
   }, [inputValue, searchPredictions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    userTypingRef.current = true;
     const newValue = e.target.value;
-    lastEmittedValueRef.current = newValue;
     setInputValue(newValue);
     onChange(newValue);
   };
 
   const handleSelectPrediction = (prediction: Prediction) => {
     justSelectedRef.current = true;
-    lastEmittedValueRef.current = prediction.description;
+    userTypingRef.current = false;
     setInputValue(prediction.description);
     onChange(prediction.description);
     setPredictions([]);

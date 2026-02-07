@@ -9,9 +9,11 @@ interface FlightCellProps {
   onClick?: () => void;
   daySpan?: number;
   isContinuation?: boolean;
+  column?: number;
+  totalColumns?: number;
 }
 
-export default function FlightCell({ flight, onClick, daySpan, isContinuation = false }: FlightCellProps) {
+export default function FlightCell({ flight, onClick, daySpan, isContinuation = false, column = 0, totalColumns = 1 }: FlightCellProps) {
   // Use daySpan if provided (for multi-day flights), otherwise use full span
   const span = daySpan ?? getFlightSpan(flight);
   const heightPx = span * 40;
@@ -31,10 +33,12 @@ export default function FlightCell({ flight, onClick, daySpan, isContinuation = 
   return (
     <div
       onClick={onClick}
-      className="absolute left-0 right-0 mx-1 rounded-xl overflow-hidden z-10 cursor-pointer"
+      className="absolute rounded-xl overflow-hidden z-10 cursor-pointer"
       style={{
         height: `${heightPx - 2}px`,
         top: '0px',
+        left: `calc(${(column / totalColumns) * 100}% + 4px)`,
+        width: `calc(${100 / totalColumns}% - 8px)`,
         background: 'linear-gradient(145deg, rgba(77, 150, 255, 0.15), rgba(107, 179, 255, 0.25))',
         border: '2px solid rgba(77, 150, 255, 0.3)',
         boxShadow: '0 2px 8px rgba(77, 150, 255, 0.15)',

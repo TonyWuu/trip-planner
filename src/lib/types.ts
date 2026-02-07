@@ -95,6 +95,7 @@ export interface WishlistItem {
   trip_id: string;
   name: string;
   category: string;
+  city: string;
   duration_minutes: number;
   address: string | null;
   notes: string | null;

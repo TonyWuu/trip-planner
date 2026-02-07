@@ -108,6 +108,39 @@ export const SEED_FLIGHTS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = 
     },
     color: '#3B82F6',
   },
+  {
+    type: 'flight',
+    name: 'KL 888: HKG → AMS',
+    start_datetime: '2025-03-08T23:25',
+    end_datetime: '2025-03-09T13:40', // Arrives 06:40 CET = 13:40 HKT
+    details: {
+      flight_number: 'KL 888',
+      airline: 'KLM',
+      departure_city: 'Hong Kong',
+      arrival_city: 'Amsterdam',
+      departure_code: 'HKG',
+      arrival_code: 'AMS',
+      local_arrival_time: '06:40 (Amsterdam)',
+    },
+    color: '#3B82F6',
+  },
+  {
+    type: 'flight',
+    name: 'KL 1217: AMS → ARN',
+    start_datetime: '2025-03-09T15:40', // Departs 08:40 CET = 15:40 HKT
+    end_datetime: '2025-03-09T17:40',   // Arrives 10:40 CET = 17:40 HKT
+    details: {
+      flight_number: 'KL 1217',
+      airline: 'KLM',
+      departure_city: 'Amsterdam',
+      arrival_city: 'Stockholm',
+      departure_code: 'AMS',
+      arrival_code: 'ARN',
+      local_departure_time: '08:40 (Amsterdam)',
+      local_arrival_time: '10:40 (Stockholm)',
+    },
+    color: '#3B82F6',
+  },
 ];
 
 export const SEED_HOTELS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = [
@@ -141,6 +174,17 @@ export const SEED_HOTELS: Omit<FixedItem, 'id' | 'trip_id' | 'created_at'>[] = [
     details: {
       address: '269 Shuncheng Ave, Luomashi, Chengdu',
       city: 'Chengdu',
+    },
+    color: '#22C55E',
+  },
+  {
+    type: 'hotel',
+    name: 'Kornhill Garden, Hong Kong',
+    start_datetime: '2025-03-07T15:00',
+    end_datetime: '2025-03-08T11:00',
+    details: {
+      address: '1 Hong On St, Kornhill, Hong Kong',
+      city: 'Hong Kong',
     },
     color: '#22C55E',
   },
