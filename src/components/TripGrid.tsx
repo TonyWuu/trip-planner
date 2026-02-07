@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { parseISO, addDays, startOfDay, isBefore, isAfter, differenceInMilliseconds, addMinutes, format } from 'date-fns';
 import { Trip, Activity, Category, ModalMode, FixedItem, WishlistItem } from '@/lib/types';
+
 import { getWeekDays, getDaysInRange, getCityForDate } from '@/lib/utils';
 import { getCategories } from '@/lib/supabase';
 import { useActivities } from '@/hooks/useActivities';
@@ -40,6 +41,7 @@ export default function TripGrid({ trip }: TripGridProps) {
   const [selectedFixedItem, setSelectedFixedItem] = useState<FixedItem | null>(null);
   const [wishlistOpen, setWishlistOpen] = useState(true);
   const [viewMode, setViewMode] = useState<'calendar' | 'map'>('calendar');
+  const [focusWishlistItem, setFocusWishlistItem] = useState<WishlistItem | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
 
   const { activities, createActivity, updateActivity, deleteActivity } = useActivities(trip.id);
@@ -296,6 +298,13 @@ export default function TripGrid({ trip }: TripGridProps) {
     [createWishlistItem, deleteActivity, trip.id]
   );
 
+  const handleWishlistItemClick = useCallback((item: WishlistItem) => {
+    if (item.address) {
+      setFocusWishlistItem(item);
+      setViewMode('map');
+    }
+  }, []);
+
   const handleDrop = useCallback(
     async (data: Activity | (WishlistItem & { isWishlistItem: true }), newDate: string, newHour: number, newMinute: number) => {
       if ('isWishlistItem' in data && data.isWishlistItem) {
@@ -474,6 +483,8 @@ export default function TripGrid({ trip }: TripGridProps) {
               days={allDays}
               onActivityClick={handleActivityClick}
               onHotelClick={handleFixedItemClick}
+              focusWishlistItem={focusWishlistItem}
+              onFocusHandled={() => setFocusWishlistItem(null)}
             />
           </div>
         )}
@@ -489,6 +500,7 @@ export default function TripGrid({ trip }: TripGridProps) {
         onActivityDrop={handleActivityToWishlist}
         onCategoryCreated={handleCategoryCreated}
         onCategoryDeleted={handleCategoryDeleted}
+        onItemClick={handleWishlistItemClick}
         tripId={trip.id}
         isOpen={wishlistOpen}
         onToggle={() => setWishlistOpen(!wishlistOpen)}

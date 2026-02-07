@@ -17,6 +17,8 @@ interface MapViewProps {
   days: DayInfo[];
   onActivityClick?: (activity: Activity) => void;
   onHotelClick?: (hotel: FixedItem) => void;
+  focusWishlistItem?: WishlistItem | null;
+  onFocusHandled?: () => void;
 }
 
 interface GeocodedLocation {
@@ -107,6 +109,8 @@ export default function MapView({
   days,
   onActivityClick,
   onHotelClick,
+  focusWishlistItem,
+  onFocusHandled,
 }: MapViewProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [geocodedLocations, setGeocodedLocations] = useState<GeocodedLocation[]>([]);
@@ -191,18 +195,20 @@ export default function MapView({
     });
   }, [geocodedLocations, selectedDay]);
 
-  // Fit bounds when filter changes
+  // Fit bounds when day filter changes or geocoding completes
   useEffect(() => {
-    if (!map || filteredLocations.length === 0) return;
+    if (!map || geocodingStatus !== 'done') return;
+
+    const boundsLocations = filteredLocations.filter((loc) => loc.type !== 'wishlist');
+    if (boundsLocations.length === 0) return;
 
     const bounds = new google.maps.LatLngBounds();
-    filteredLocations.forEach((loc) => {
+    boundsLocations.forEach((loc) => {
       bounds.extend({ lat: loc.lat, lng: loc.lng });
     });
 
-    // Fit bounds with padding
     map.fitBounds(bounds, {
-      top: 80,    // Account for day filter bar
+      top: 80,
       bottom: 50,
       left: 50,
       right: 50,
@@ -219,7 +225,26 @@ export default function MapView({
     return () => {
       google.maps.event.removeListener(listener);
     };
-  }, [map, selectedDay, filteredLocations.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedDay, geocodingStatus]);
+
+  // Focus on a specific wishlist item when requested
+  useEffect(() => {
+    if (!focusWishlistItem || !map || geocodingStatus !== 'done') return;
+
+    const location = geocodedLocations.find(
+      (loc) => loc.type === 'wishlist' && loc.id === focusWishlistItem.id
+    );
+
+    if (location) {
+      map.panTo({ lat: location.lat, lng: location.lng });
+      map.setZoom(16);
+      setSelectedLocation(location);
+      setSelectedDay('all');
+    }
+
+    onFocusHandled?.();
+  }, [focusWishlistItem, map, geocodedLocations, geocodingStatus, onFocusHandled]);
 
   // Geocode addresses when map is loaded
   const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
@@ -324,32 +349,77 @@ export default function MapView({
 
   return (
     <div className="relative h-full">
-      {/* Day Filter */}
-      <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-2">
+      {/* Day Filter - grouped by city */}
+      <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-2 max-w-[calc(100%-2rem)]">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setSelectedDay('all')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               selectedDay === 'all'
-                ? 'bg-amber-500 text-white shadow-sm'
+                ? 'bg-gray-800 text-white shadow-sm'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             All Days
           </button>
-          {days.map((day) => (
-            <button
-              key={day.dateStr}
-              onClick={() => setSelectedDay(day.dateStr)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                selectedDay === day.dateStr
-                  ? 'bg-amber-500 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {format(day.date, 'MMM d')}
-            </button>
-          ))}
+          {(() => {
+            const cityColors: Record<string, string> = {
+              'Hong Kong': '#ff6b6b',
+              'Shanghai': '#4d96ff',
+              'Chengdu': '#6bcb77',
+              'Transit': '#9ca3af',
+            };
+            const getCityColor = (city: string) => {
+              for (const [key, color] of Object.entries(cityColors)) {
+                if (city.includes(key)) return color;
+              }
+              return '#9ca3af';
+            };
+
+            // Group consecutive days by city
+            const groups: { city: string; days: DayInfo[] }[] = [];
+            days.forEach((day) => {
+              const lastGroup = groups[groups.length - 1];
+              if (lastGroup && lastGroup.city === day.city) {
+                lastGroup.days.push(day);
+              } else {
+                groups.push({ city: day.city, days: [day] });
+              }
+            });
+
+            return groups.map((group) => {
+              const color = getCityColor(group.city);
+              const isAnySelected = group.days.some((d) => d.dateStr === selectedDay);
+              return (
+                <div key={group.city + group.days[0].dateStr} className="flex items-center gap-1">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider px-1 shrink-0"
+                    style={{ color }}
+                  >
+                    {group.city.includes('→') ? group.city : group.city}
+                  </span>
+                  {group.days.map((day) => (
+                    <button
+                      key={day.dateStr}
+                      onClick={() => setSelectedDay(day.dateStr)}
+                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        selectedDay === day.dateStr
+                          ? 'text-white shadow-sm'
+                          : 'text-gray-600 hover:opacity-80'
+                      }`}
+                      style={selectedDay === day.dateStr
+                        ? { background: color }
+                        : { background: `${color}15`, border: `1px solid ${color}20` }
+                      }
+                    >
+                      {format(day.date, 'd')}
+                    </button>
+                  ))}
+                  <div className="w-px h-4 bg-gray-200 mx-1 last:hidden" />
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
 
