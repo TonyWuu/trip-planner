@@ -242,7 +242,7 @@ button:focus-visible {
   padding: 8px !important;
 }
 .gm-style-iw-d {
-  overflow: hidden !important;
+  overflow: auto !important;
 }
 
 /* Confetti burst keyframes */

@@ -31,6 +31,7 @@ interface GeocodedLocation {
   orderNumber?: number; // Order within the day (1, 2, 3...)
   dateStr?: string;
   placeId?: string;
+  photoUrl?: string;
 }
 
 const CATEGORY_MARKER_COLORS: Record<string, string> = {
@@ -118,8 +119,10 @@ export default function MapView({
   const [selectedLocation, setSelectedLocation] = useState<GeocodedLocation | null>(null);
   const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'done'>('idle');
   const [selectedDay, setSelectedDay] = useState<string>('all'); // 'all' or dateStr
-  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({}); // placeId -> photo URL
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  const skipBoundsFitRef = useRef(false);
+  const focusingRef = useRef(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -201,6 +204,10 @@ export default function MapView({
   // Fit bounds when day filter changes or geocoding completes
   useEffect(() => {
     if (!map || geocodingStatus !== 'done') return;
+    if (skipBoundsFitRef.current) {
+      skipBoundsFitRef.current = false;
+      return;
+    }
 
     const boundsLocations = filteredLocations.filter((loc) => loc.type !== 'wishlist');
     if (boundsLocations.length === 0) return;
@@ -231,23 +238,61 @@ export default function MapView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedDay, geocodingStatus]);
 
-  // Focus on a specific wishlist item when requested
+  // Focus on a specific wishlist item when requested — geocodes immediately if needed
   useEffect(() => {
-    if (!focusWishlistItem || !map || geocodingStatus !== 'done') return;
+    if (!focusWishlistItem || !map || focusingRef.current) return;
 
-    const location = geocodedLocations.find(
+    const zoomToLocation = (location: GeocodedLocation) => {
+      skipBoundsFitRef.current = true;
+      map.panTo({ lat: location.lat, lng: location.lng });
+      map.setZoom(16);
+      handleMarkerClick(location);
+      setSelectedDay('all');
+      onFocusHandled?.();
+    };
+
+    // Check if already geocoded
+    const existing = geocodedLocations.find(
       (loc) => loc.type === 'wishlist' && loc.id === focusWishlistItem.id
     );
 
-    if (location) {
-      map.panTo({ lat: location.lat, lng: location.lng });
-      map.setZoom(16);
-      setSelectedLocation(location);
-      setSelectedDay('all');
+    if (existing) {
+      zoomToLocation(existing);
+      return;
     }
 
-    onFocusHandled?.();
-  }, [focusWishlistItem, map, geocodedLocations, geocodingStatus, onFocusHandled]);
+    // Not yet geocoded — geocode it directly without waiting for batch
+    if (!focusWishlistItem.address) {
+      onFocusHandled?.();
+      return;
+    }
+
+    focusingRef.current = true;
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: focusWishlistItem.address }, (results, status) => {
+      focusingRef.current = false;
+      if (status === 'OK' && results && results[0]) {
+        const newLoc: GeocodedLocation = {
+          id: focusWishlistItem.id,
+          type: 'wishlist',
+          item: focusWishlistItem,
+          lat: results[0].geometry.location.lat(),
+          lng: results[0].geometry.location.lng(),
+          address: focusWishlistItem.address!,
+          placeId: results[0].place_id,
+        };
+        setGeocodedLocations((prev) => {
+          // Avoid duplicates if batch geocoding already added it
+          if (prev.some((loc) => loc.id === newLoc.id)) return prev;
+          return calculateOrderNumbers([...prev, newLoc]);
+        });
+        zoomToLocation(newLoc);
+      } else {
+        onFocusHandled?.();
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusWishlistItem, map, geocodedLocations]);
 
   const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
@@ -306,7 +351,9 @@ export default function MapView({
             setGeocodedLocations((prev) => {
               const ids = new Set(itemsWithAddresses.map((i) => i.id));
               const kept = prev.filter((loc) => ids.has(loc.id));
-              return calculateOrderNumbers([...kept, ...newLocations]);
+              const existingIds = new Set(kept.map((loc) => loc.id));
+              const deduped = newLocations.filter((loc) => !existingIds.has(loc.id));
+              return calculateOrderNumbers([...kept, ...deduped]);
             });
             setGeocodingStatus('done');
           }
@@ -328,17 +375,26 @@ export default function MapView({
   const handleMarkerClick = (location: GeocodedLocation) => {
     setSelectedLocation(location);
 
-    // Fetch photo if we have a placeId and haven't already
-    if (location.placeId && !photoUrls[location.placeId] && placesServiceRef.current) {
-      placesServiceRef.current.getDetails(
-        { placeId: location.placeId, fields: ['photos'] },
-        (place, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && place?.photos?.[0]) {
-            const url = place.photos[0].getUrl({ maxWidth: 280, maxHeight: 160 });
-            setPhotoUrls((prev) => ({ ...prev, [location.placeId!]: url }));
+    if (location.placeId && !photoUrls[location.placeId]) {
+      // Create PlacesService on demand with a div (more reliable than map instance)
+      if (!placesServiceRef.current && map) {
+        const div = document.createElement('div');
+        placesServiceRef.current = new google.maps.places.PlacesService(div);
+      }
+      if (placesServiceRef.current) {
+        placesServiceRef.current.getDetails(
+          { placeId: location.placeId, fields: ['photos'] },
+          (place, status) => {
+            console.log('PlacesService getDetails status:', status, 'photos:', place?.photos?.length);
+            if (status === google.maps.places.PlacesServiceStatus.OK && place?.photos?.[0]) {
+              const url = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 200 });
+              setPhotoUrls((prev) => ({ ...prev, [location.placeId!]: url }));
+            }
           }
-        }
-      );
+        );
+      } else {
+        console.warn('PlacesService not available');
+      }
     }
   };
 
@@ -381,6 +437,15 @@ export default function MapView({
 
   return (
     <div className="relative h-full">
+      {/* Fix Google Maps InfoWindow: overlay close button instead of reserving space */}
+      <style>{`
+        .gm-style-iw-chr {
+          position: absolute !important;
+          right: 0 !important;
+          top: 0 !important;
+          z-index: 10 !important;
+        }
+      `}</style>
       {/* Day Filter - grouped by city */}
       <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-2 max-w-[calc(100%-2rem)]">
         <div className="flex items-center gap-2 flex-wrap">
@@ -507,17 +572,17 @@ export default function MapView({
           <InfoWindow
             position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
             onCloseClick={handleInfoWindowClose}
-            options={{ maxWidth: 280 }}
+            options={{ maxWidth: 320 }}
           >
-            <div className="max-w-[250px] -mt-1">
+            <div style={{ minWidth: '250px' }}>
               {selectedLocation.placeId && photoUrls[selectedLocation.placeId] && (
                 <img
                   src={photoUrls[selectedLocation.placeId]}
                   alt={selectedLocation.address}
-                  className="w-full h-[120px] object-cover rounded-lg mb-2"
+                  className="w-full h-[140px] object-cover rounded-lg mb-2"
                 />
               )}
-              <div className="px-1">
+              <div className="pb-1">
               {selectedLocation.type === 'activity' ? (
                 <>
                   <h3 className="font-bold text-gray-900 mb-1">
