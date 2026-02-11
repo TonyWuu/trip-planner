@@ -122,7 +122,8 @@ export default function MapView({
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const skipBoundsFitRef = useRef(false);
-  const focusingRef = useRef(false);
+  const focusWishlistItemRef = useRef(focusWishlistItem);
+  focusWishlistItemRef.current = focusWishlistItem;
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -238,59 +239,22 @@ export default function MapView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedDay, geocodingStatus]);
 
-  // Focus on a specific wishlist item when requested — geocodes immediately if needed
+  // Focus on a specific wishlist item when it appears in geocoded locations
   useEffect(() => {
-    if (!focusWishlistItem || !map || focusingRef.current) return;
+    if (!focusWishlistItem || !map) return;
 
-    const zoomToLocation = (location: GeocodedLocation) => {
+    const location = geocodedLocations.find(
+      (loc) => loc.type === 'wishlist' && loc.id === focusWishlistItem.id
+    );
+
+    if (location) {
       skipBoundsFitRef.current = true;
       map.panTo({ lat: location.lat, lng: location.lng });
       map.setZoom(16);
       handleMarkerClick(location);
       setSelectedDay('all');
       onFocusHandled?.();
-    };
-
-    // Check if already geocoded
-    const existing = geocodedLocations.find(
-      (loc) => loc.type === 'wishlist' && loc.id === focusWishlistItem.id
-    );
-
-    if (existing) {
-      zoomToLocation(existing);
-      return;
     }
-
-    // Not yet geocoded — geocode it directly without waiting for batch
-    if (!focusWishlistItem.address) {
-      onFocusHandled?.();
-      return;
-    }
-
-    focusingRef.current = true;
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: focusWishlistItem.address }, (results, status) => {
-      focusingRef.current = false;
-      if (status === 'OK' && results && results[0]) {
-        const newLoc: GeocodedLocation = {
-          id: focusWishlistItem.id,
-          type: 'wishlist',
-          item: focusWishlistItem,
-          lat: results[0].geometry.location.lat(),
-          lng: results[0].geometry.location.lng(),
-          address: focusWishlistItem.address!,
-          placeId: results[0].place_id,
-        };
-        setGeocodedLocations((prev) => {
-          // Avoid duplicates if batch geocoding already added it
-          if (prev.some((loc) => loc.id === newLoc.id)) return prev;
-          return calculateOrderNumbers([...prev, newLoc]);
-        });
-        zoomToLocation(newLoc);
-      } else {
-        onFocusHandled?.();
-      }
-    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusWishlistItem, map, geocodedLocations]);
 
@@ -327,14 +291,21 @@ export default function MapView({
 
     setGeocodingStatus('loading');
     const geocoder = new google.maps.Geocoder();
-    const newLocations: GeocodedLocation[] = [];
     let completed = 0;
 
-    newItems.forEach((item, index) => {
+    // Prioritize the focused item so it geocodes first
+    const focusedId = focusWishlistItemRef.current?.id;
+    const sorted = [...newItems].sort((a, b) => {
+      if (a.id === focusedId) return -1;
+      if (b.id === focusedId) return 1;
+      return 0;
+    });
+
+    sorted.forEach((item, index) => {
       setTimeout(() => {
         geocoder.geocode({ address: item.address }, (results, status) => {
           if (status === 'OK' && results && results[0]) {
-            newLocations.push({
+            const newLoc: GeocodedLocation = {
               id: item.id,
               type: item.type,
               item: item.item,
@@ -343,18 +314,16 @@ export default function MapView({
               address: item.address,
               dateStr: item.dateStr,
               placeId: results[0].place_id,
+            };
+            // Add each item immediately so focus can pick it up
+            setGeocodedLocations((prev) => {
+              if (prev.some((loc) => loc.id === newLoc.id)) return prev;
+              return calculateOrderNumbers([...prev, newLoc]);
             });
           }
 
           completed++;
-          if (completed === newItems.length) {
-            setGeocodedLocations((prev) => {
-              const ids = new Set(itemsWithAddresses.map((i) => i.id));
-              const kept = prev.filter((loc) => ids.has(loc.id));
-              const existingIds = new Set(kept.map((loc) => loc.id));
-              const deduped = newLocations.filter((loc) => !existingIds.has(loc.id));
-              return calculateOrderNumbers([...kept, ...deduped]);
-            });
+          if (completed === sorted.length) {
             setGeocodingStatus('done');
           }
         });
@@ -579,7 +548,7 @@ export default function MapView({
                 <img
                   src={photoUrls[selectedLocation.placeId]}
                   alt={selectedLocation.address}
-                  className="w-full h-[140px] object-cover rounded-lg mb-2"
+                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }}
                 />
               )}
               <div className="pb-1">

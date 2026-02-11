@@ -237,12 +237,14 @@ button:focus-visible {
   background-size: 20px 20px;
 }
 
-/* Google Maps InfoWindow - reduce default padding */
-.gm-style-iw-c {
-  padding: 8px !important;
-}
-.gm-style-iw-d {
-  overflow: auto !important;
+/* Undo Tailwind preflight resets inside Google Maps POI InfoWindows */
+.gm-style-iw-d :where(p, h1, h2, h3, h4, img, a) {
+  margin: revert;
+  display: revert;
+  max-width: revert;
+  height: revert;
+  color: revert;
+  text-decoration: revert;
 }
 
 /* Confetti burst keyframes */
