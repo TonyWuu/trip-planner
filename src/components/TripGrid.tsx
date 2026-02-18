@@ -385,6 +385,37 @@ export default function TripGrid({ trip }: TripGridProps) {
       <div className="flex-1 flex overflow-hidden min-h-0">
         {viewMode === 'calendar' ? (
           /* Calendar View */
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+              {/* Mobile hotel cards - fixed above scroll */}
+              {isMobile && displayDays[0] && (() => {
+                const currentDay = displayDays[0].dateStr;
+                const currentDate = parseISO(currentDay);
+                const dayHotels = hotels.filter((hotel) => {
+                  const checkIn = parseISO(hotel.start_datetime.split('T')[0]);
+                  const checkOut = parseISO(hotel.end_datetime.split('T')[0]);
+                  return currentDate >= checkIn && currentDate < checkOut;
+                });
+                if (dayHotels.length === 0) return null;
+                return (
+                  <div className="flex-shrink-0 px-4 py-2 flex gap-2 bg-[#fffbf5] border-b border-gray-100">
+                    {dayHotels.map((hotel) => (
+                      <button
+                        key={hotel.id}
+                        onClick={() => handleFixedItemClick(hotel)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                        style={{
+                          background: 'rgba(107, 203, 119, 0.2)',
+                          border: '1px solid rgba(107, 203, 119, 0.4)',
+                          color: '#15803d',
+                        }}
+                      >
+                        <span>🏨</span>
+                        <span className="truncate">{hotel.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
           <div ref={gridContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-4">
               {/* Unified sticky header - FixedItemsBar + Date headers */}
               <div className="hidden md:block sticky top-0 z-40 bg-[#fffbf5] px-4 pt-2 shadow-sm">
@@ -446,36 +477,6 @@ export default function TripGrid({ trip }: TripGridProps) {
                   </div>
                 </div>
               </div>
-              {/* Mobile hotel cards */}
-              {isMobile && displayDays[0] && (() => {
-                const currentDay = displayDays[0].dateStr;
-                const currentDate = parseISO(currentDay);
-                const dayHotels = hotels.filter((hotel) => {
-                  const checkIn = parseISO(hotel.start_datetime.split('T')[0]);
-                  const checkOut = parseISO(hotel.end_datetime.split('T')[0]);
-                  return currentDate >= checkIn && currentDate < checkOut;
-                });
-                if (dayHotels.length === 0) return null;
-                return (
-                  <div className="px-4 pb-2 flex gap-2">
-                    {dayHotels.map((hotel) => (
-                      <button
-                        key={hotel.id}
-                        onClick={() => handleFixedItemClick(hotel)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                        style={{
-                          background: 'rgba(107, 203, 119, 0.2)',
-                          border: '1px solid rgba(107, 203, 119, 0.4)',
-                          color: '#15803d',
-                        }}
-                      >
-                        <span>🏨</span>
-                        <span className="truncate">{hotel.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
               {/* Calendar grid - just time slots */}
               <div className="flex px-4">
               <TimeColumn showHeader={false} />
@@ -498,6 +499,7 @@ export default function TripGrid({ trip }: TripGridProps) {
               {/* Right spacer */}
               <div className="flex-shrink-0 w-10" />
             </div>
+          </div>
           </div>
         ) : (
           /* Map View */

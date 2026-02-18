@@ -291,7 +291,7 @@ export default function ActivityModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(85vh-90px)]">
+        <form onSubmit={handleSubmit} className="relative overflow-y-auto overflow-x-hidden max-h-[calc(85vh-90px)]">
           <div className="p-4 space-y-3">
             {/* Name */}
             <div>
