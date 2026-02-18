@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, ActivityFormData, Category, ModalMode } from '@/lib/types';
-import { CURRENCIES, TRIP_YEAR } from '@/lib/constants';
+import { TRIP_YEAR } from '@/lib/constants';
 import { getMapsUrl } from '@/lib/utils';
 import { createCategory, deleteCategory } from '@/lib/supabase';
 import { XMarkIcon, TrashIcon, PlusIcon, getCategoryIcon, LinkIcon } from './Icons';
@@ -58,8 +58,6 @@ export default function ActivityModal({
     address: '',
     notes: '',
     booking_reference: '',
-    cost_amount: '',
-    cost_currency: 'HKD',
     links: '',
   });
   const [saving, setSaving] = useState(false);
@@ -98,8 +96,6 @@ export default function ActivityModal({
         address: activity.address || '',
         notes: activity.notes || '',
         booking_reference: '',
-        cost_amount: activity.cost_amount?.toString() || '',
-        cost_currency: activity.cost_currency || 'HKD',
         links: activity.links?.join('\n') || '',
       });
     }
@@ -121,8 +117,6 @@ export default function ActivityModal({
         address: '',
         notes: '',
         booking_reference: '',
-        cost_amount: '',
-        cost_currency: 'HKD',
         links: '',
       });
     }
@@ -188,8 +182,6 @@ export default function ActivityModal({
       address: formData.address || null,
       notes: formData.notes || null,
       booking_reference: formData.booking_reference || null,
-      cost_amount: formData.cost_amount ? parseFloat(formData.cost_amount) : null,
-      cost_currency: formData.cost_amount ? formData.cost_currency : null,
       links: formData.links ? formData.links.split('\n').filter((l) => l.trim()) : null,
     };
 
@@ -507,30 +499,6 @@ export default function ActivityModal({
                 className="w-full px-3 py-2 rounded-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40 focus:ring-1 focus:ring-[#ff6b6b]/20 transition-colors resize-y"
                 placeholder="Additional notes..."
               />
-            </div>
-
-            {/* Cost */}
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-500 mb-1">Cost</label>
-              <div className="flex w-40">
-                <select
-                  value={formData.cost_currency}
-                  onChange={(e) => setFormData({ ...formData, cost_currency: e.target.value })}
-                  className="h-9 px-2 rounded-l-lg text-sm text-gray-600 bg-gray-100 border border-r-0 border-gray-200 focus:outline-none"
-                >
-                  {CURRENCIES.map((currency) => (
-                    <option key={currency} value={currency}>{currency}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.cost_amount}
-                  onChange={(e) => setFormData({ ...formData, cost_amount: e.target.value })}
-                  className="flex-1 h-9 min-w-0 px-3 rounded-r-lg text-sm text-gray-700 placeholder:text-gray-400 bg-gray-50 border border-gray-200 focus:outline-none focus:border-[#ff6b6b]/40"
-                  placeholder="0.00"
-                />
-              </div>
             </div>
 
             {/* Links */}

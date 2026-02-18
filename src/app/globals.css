@@ -238,13 +238,40 @@ button:focus-visible {
 }
 
 /* Undo Tailwind preflight resets inside Google Maps POI InfoWindows */
-.gm-style-iw-d :where(p, h1, h2, h3, h4, img, a) {
+.gm-style-iw-d :where(p, h1, h2, h3, h4, a) {
   margin: revert;
   display: revert;
   max-width: revert;
   height: revert;
   color: revert;
   text-decoration: revert;
+}
+
+/* Fix InfoWindow content clipping and padding */
+.gm-style-iw-d {
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.gm-style-iw-c {
+  padding: 0 !important;
+}
+
+/* Style the close button in our custom InfoWindows so it's visible over photos */
+.gm-style-iw-chr button {
+  background: white !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+  width: 28px !important;
+  height: 28px !important;
+  margin: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.gm-style-iw-chr button span {
+  margin: 0 !important;
 }
 
 /* Confetti burst keyframes */

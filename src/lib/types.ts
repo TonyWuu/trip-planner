@@ -47,8 +47,6 @@ export interface Activity {
   address: string | null;
   notes: string | null;
   booking_reference: string | null;
-  cost_amount: number | null;
-  cost_currency: string | null;
   links: string[] | null;
   created_at: string;
   updated_at: string;
@@ -85,8 +83,6 @@ export interface ActivityFormData {
   address: string;
   notes: string;
   booking_reference: string;
-  cost_amount: string;
-  cost_currency: string;
   links: string;
 }
 

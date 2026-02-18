@@ -202,9 +202,9 @@ export default function MapView({
     });
   }, [geocodedLocations, selectedDay]);
 
-  // Fit bounds when day filter changes or geocoding completes
+  // Fit bounds when day filter changes or geocoding completes (instant, no animation)
   useEffect(() => {
-    if (!map || geocodingStatus !== 'done') return;
+    if (!map) return;
     if (skipBoundsFitRef.current) {
       skipBoundsFitRef.current = false;
       return;
@@ -218,24 +218,34 @@ export default function MapView({
       bounds.extend({ lat: loc.lat, lng: loc.lng });
     });
 
-    map.fitBounds(bounds, {
-      top: 80,
-      bottom: 50,
-      left: 50,
-      right: 50,
-    });
+    const padding = { top: 80, bottom: 50, left: 50, right: 50 };
+    const div = map.getDiv();
+    const width = div.offsetWidth - padding.left - padding.right;
+    const height = div.offsetHeight - padding.top - padding.bottom;
 
-    // Prevent zooming in too close for single markers or nearby markers
-    const listener = google.maps.event.addListenerOnce(map, 'idle', () => {
-      const currentZoom = map.getZoom();
-      if (currentZoom && currentZoom > 15) {
-        map.setZoom(15);
-      }
-    });
+    if (width <= 0 || height <= 0) {
+      map.fitBounds(bounds, padding);
+      return;
+    }
 
-    return () => {
-      google.maps.event.removeListener(listener);
-    };
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+
+    // Compute zoom from longitude span
+    let lngSpan = ne.lng() - sw.lng();
+    if (lngSpan < 0) lngSpan += 360;
+    const lngZoom = lngSpan > 0 ? Math.log2((width * 360) / (lngSpan * 256)) : 21;
+
+    // Compute zoom from latitude span (Mercator projection)
+    const yNE = Math.log(Math.tan(Math.PI / 4 + (ne.lat() * Math.PI) / 360));
+    const ySW = Math.log(Math.tan(Math.PI / 4 + (sw.lat() * Math.PI) / 360));
+    const latSpan = Math.abs(yNE - ySW);
+    const latZoom = latSpan > 0 ? Math.log2((height * 2 * Math.PI) / (latSpan * 256)) : 21;
+
+    const zoom = Math.min(Math.floor(Math.min(lngZoom, latZoom)), 15);
+
+    map.setCenter(bounds.getCenter());
+    map.setZoom(zoom);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedDay, geocodingStatus]);
 
@@ -301,33 +311,30 @@ export default function MapView({
       return 0;
     });
 
-    sorted.forEach((item, index) => {
-      setTimeout(() => {
-        geocoder.geocode({ address: item.address }, (results, status) => {
-          if (status === 'OK' && results && results[0]) {
-            const newLoc: GeocodedLocation = {
-              id: item.id,
-              type: item.type,
-              item: item.item,
-              lat: results[0].geometry.location.lat(),
-              lng: results[0].geometry.location.lng(),
-              address: item.address,
-              dateStr: item.dateStr,
-              placeId: results[0].place_id,
-            };
-            // Add each item immediately so focus can pick it up
-            setGeocodedLocations((prev) => {
-              if (prev.some((loc) => loc.id === newLoc.id)) return prev;
-              return calculateOrderNumbers([...prev, newLoc]);
-            });
-          }
+    sorted.forEach((item) => {
+      geocoder.geocode({ address: item.address }, (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          const newLoc: GeocodedLocation = {
+            id: item.id,
+            type: item.type,
+            item: item.item,
+            lat: results[0].geometry.location.lat(),
+            lng: results[0].geometry.location.lng(),
+            address: item.address,
+            dateStr: item.dateStr,
+            placeId: results[0].place_id,
+          };
+          setGeocodedLocations((prev) => {
+            if (prev.some((loc) => loc.id === newLoc.id)) return prev;
+            return calculateOrderNumbers([...prev, newLoc]);
+          });
+        }
 
-          completed++;
-          if (completed === sorted.length) {
-            setGeocodingStatus('done');
-          }
-        });
-      }, index * 200);
+        completed++;
+        if (completed === sorted.length) {
+          setGeocodingStatus('done');
+        }
+      });
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, itemsWithAddresses]);
@@ -416,17 +423,17 @@ export default function MapView({
         }
       `}</style>
       {/* Day Filter - grouped by city */}
-      <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-2 max-w-[calc(100%-2rem)]">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 max-w-[calc(100%-2rem)]">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setSelectedDay('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all shrink-0 ${
               selectedDay === 'all'
                 ? 'bg-gray-800 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            All Days
+            All
           </button>
           {(() => {
             const cityColors: Record<string, string> = {
@@ -435,53 +442,79 @@ export default function MapView({
               'Chengdu': '#6bcb77',
               'Transit': '#9ca3af',
             };
+            const cityAbbrev: Record<string, string> = {
+              'Hong Kong': 'HK',
+              'Shanghai': 'SH',
+              'Chengdu': 'CD',
+            };
+            const getPrimaryCity = (city: string): string => {
+              if (city.includes('→')) {
+                // For transit days like "Hong Kong → Shanghai", use the destination
+                const dest = city.split('→').pop()!.trim();
+                return dest;
+              }
+              return city;
+            };
             const getCityColor = (city: string) => {
               for (const [key, color] of Object.entries(cityColors)) {
                 if (city.includes(key)) return color;
               }
               return '#9ca3af';
             };
+            const getAbbrev = (city: string) => {
+              for (const [key, abbrev] of Object.entries(cityAbbrev)) {
+                if (city.includes(key)) return abbrev;
+              }
+              return city.slice(0, 2).toUpperCase();
+            };
 
-            // Group consecutive days by city
+            // Group days by primary city, merging transit days into destination
             const groups: { city: string; days: DayInfo[] }[] = [];
             days.forEach((day) => {
+              const primary = getPrimaryCity(day.city);
               const lastGroup = groups[groups.length - 1];
-              if (lastGroup && lastGroup.city === day.city) {
+              if (lastGroup && lastGroup.city === primary) {
                 lastGroup.days.push(day);
               } else {
-                groups.push({ city: day.city, days: [day] });
+                groups.push({ city: primary, days: [day] });
               }
             });
 
-            return groups.map((group) => {
+            return groups.map((group, gi) => {
               const color = getCityColor(group.city);
-              const isAnySelected = group.days.some((d) => d.dateStr === selectedDay);
               return (
-                <div key={group.city + group.days[0].dateStr} className="flex items-center gap-1">
+                <div key={group.city + group.days[0].dateStr} className="flex items-center">
+                  {gi > 0 && <div className="w-px h-4 bg-gray-200 mx-1 shrink-0" />}
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wider px-1 shrink-0"
+                    className="text-[9px] font-bold uppercase tracking-wide px-1 shrink-0"
                     style={{ color }}
                   >
-                    {group.city.includes('→') ? group.city : group.city}
+                    {getAbbrev(group.city)}
                   </span>
-                  {group.days.map((day) => (
-                    <button
-                      key={day.dateStr}
-                      onClick={() => setSelectedDay(day.dateStr)}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                        selectedDay === day.dateStr
-                          ? 'text-white shadow-sm'
-                          : 'text-gray-600 hover:opacity-80'
-                      }`}
-                      style={selectedDay === day.dateStr
-                        ? { background: color }
-                        : { background: `${color}15`, border: `1px solid ${color}20` }
-                      }
-                    >
-                      {format(day.date, 'd')}
-                    </button>
-                  ))}
-                  <div className="w-px h-4 bg-gray-200 mx-1 last:hidden" />
+                  {group.days.map((day) => {
+                    const isTransit = day.city.includes('→');
+                    const dayColor = getCityColor(day.city);
+                    return (
+                      <button
+                        key={day.dateStr}
+                        onClick={() => setSelectedDay(day.dateStr)}
+                        className={`w-6 h-6 rounded-full text-[10px] font-medium transition-all shrink-0 ${
+                          selectedDay === day.dateStr
+                            ? 'text-white shadow-sm'
+                            : isTransit
+                            ? 'text-gray-400 hover:text-gray-600'
+                            : 'text-gray-600 hover:opacity-80'
+                        }`}
+                        style={selectedDay === day.dateStr
+                          ? { background: dayColor }
+                          : {}
+                        }
+                        title={`${format(day.date, 'MMM d')} · ${day.city}`}
+                      >
+                        {format(day.date, 'd')}
+                      </button>
+                    );
+                  })}
                 </div>
               );
             });
@@ -543,15 +576,15 @@ export default function MapView({
             onCloseClick={handleInfoWindowClose}
             options={{ maxWidth: 320 }}
           >
-            <div style={{ minWidth: '250px' }}>
+            <div style={{ minWidth: '250px', width: '280px' }}>
               {selectedLocation.placeId && photoUrls[selectedLocation.placeId] && (
                 <img
                   src={photoUrls[selectedLocation.placeId]}
                   alt={selectedLocation.address}
-                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }}
+                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px 8px 0 0', display: 'block' }}
                 />
               )}
-              <div className="pb-1">
+              <div className="pb-1" style={{ padding: '8px 12px 8px' }}>
               {selectedLocation.type === 'activity' ? (
                 <>
                   <h3 className="font-bold text-gray-900 mb-1">
