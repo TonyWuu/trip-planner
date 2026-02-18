@@ -39,7 +39,7 @@ export default function TripGrid({ trip }: TripGridProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [fixedItemModalOpen, setFixedItemModalOpen] = useState(false);
   const [selectedFixedItem, setSelectedFixedItem] = useState<FixedItem | null>(null);
-  const [wishlistOpen, setWishlistOpen] = useState(true);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'map'>('calendar');
   const [focusWishlistItem, setFocusWishlistItem] = useState<WishlistItem | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
