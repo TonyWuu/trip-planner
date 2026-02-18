@@ -358,11 +358,11 @@ export default function FixedItemModal({
                   <label className="block text-sm font-semibold text-gray-600 mb-2">
                     Address
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     value={hotelForm.address}
                     onChange={(e) => setHotelForm({ ...hotelForm, address: e.target.value })}
-                    className="w-full px-4 py-3 border border-green-200 rounded-xl bg-green-50/30 text-gray-700 placeholder:text-gray-400 focus:border-green-400 transition-all"
+                    className="w-full px-4 py-3 border border-green-200 rounded-xl bg-green-50/30 text-gray-700 placeholder:text-gray-400 focus:border-green-400 transition-all resize-none"
                     placeholder="123 Example Street"
                   />
                 </div>
