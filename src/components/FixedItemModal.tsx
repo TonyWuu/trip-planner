@@ -176,7 +176,7 @@ export default function FixedItemModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl animate-slideUp" style={{ borderColor, borderWidth: '2px' }}>
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl animate-slideUp" style={{ borderColor, borderWidth: '2px', overflowX: 'hidden' }}>
         {/* Header */}
         <div
           className="flex items-center justify-between p-4"
@@ -202,7 +202,7 @@ export default function FixedItemModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="relative overflow-y-auto max-h-[calc(90vh-180px)]">
+        <form onSubmit={handleSubmit} className="relative overflow-y-auto overflow-x-hidden max-h-[calc(90vh-180px)]">
           <div className="p-5 space-y-5">
             {item.type === 'flight' ? (
               <>
